@@ -1,0 +1,568 @@
+{% include 'base/header.html' %}
+
+
+
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+
+<!-- Start Content-->
+
+        <!-- start page title -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-title-box">
+                    <div class="page-title-right">
+                    </div>
+                </div>
+            </div>
+        </div>     
+        <!-- end page title --> 
+
+        <div class="row">
+            <div class="col-xxl-3 col-lg-6">
+              <div class="card widget-flat">
+                  <div class="card-body">
+                      <div class="float-end">
+                          <i class="mdi mdi-pulse widget-icon"></i>
+                      </div>
+                      <h5 class="text-muted fw-normal mt-0" title="Growth">Всього працівників</h5>
+                      <h3 class="mt-3 mb-3">{{dashboard_info.count_users}}</h3>
+                      <p class="mb-0 text-muted">
+                      </p>
+                  </div>
+              </div>
+          </div> <!-- end col-->
+          <div class="col-xxl-3 col-lg-6">
+              <div class="card widget-flat">
+                  <div class="card-body">
+                      <div class="float-end">
+                          <i class="mdi mdi-pulse widget-icon"></i>
+                      </div>
+                      <h5 class="text-muted fw-normal mt-0" title="Growth">Всього відділів</h5>
+                      <h3 class="mt-3 mb-3">{{dashboard_info.count_departaments}}</h3>
+                      <p class="mb-0 text-muted">
+                      </p>
+                  </div>
+              </div>
+          </div> <!-- end col-->
+          <div class="col-xxl-3 col-lg-6">
+              <div class="card widget-flat">
+                  <div class="card-body">
+                      <div class="float-end">
+                          <i class="mdi mdi-pulse widget-icon"></i>
+                      </div>
+                      <h5 class="text-muted fw-normal mt-0" title="Growth">Годин відпрацьовано в цьому місяці</h5>
+                      <h3 class="mt-3 mb-3">{{dashboard_info.count_worked_hours}}</h3>
+                      <p class="mb-0 text-muted">
+                      </p>
+                  </div>
+              </div>
+          </div> <!-- end col-->
+          <div class="col-xxl-3 col-lg-6">
+              <div class="card widget-flat">
+                  <div class="card-body">
+                      <div class="float-end">
+                          <i class="mdi mdi-pulse widget-icon"></i>
+                      </div>
+                      <h5 class="text-muted fw-normal mt-0" title="Growth">Годин не допрацьовано в цьому місяці</h5>
+                      <h3 class="mt-3 mb-3">{{dashboard_info.count_do_worked_hours}}</h3>
+                      <p class="mb-0 text-muted">
+                      </p>
+                  </div>
+              </div>
+          </div> <!-- end col-->
+
+        </div>
+        <!-- end row -->
+
+        <div class="row">
+            <style type="text/css">
+                .table-responsive { 
+                    max-height: 800px;
+                    overflow-x: auto;
+                    white-space: nowrap;
+                }
+
+                #basic-datatable {
+                    width: 100%;
+                }
+
+                #basic-datatable th, #basic-datatable td {
+                    border-right: 1px solid #ddd; /* Це додасть тонку сіру вертикальну лінію справа від кожної клітинки */
+                }
+
+                .card-body {
+                    position: relative; /* Встановіть контейнер як відносний */
+                }
+
+                .dropdown-container {
+                    position: absolute; /* Абсолютне позиціонування для dropdown */
+                    top: 10px; /* Відступ зверху */
+                    right: 10px; /* Відступ зправа */
+                }
+
+                .bottom-icon {
+                    bottom: 2px;
+                    right: 5px;
+                    font-size: 1em; /* Менший розмір тексту */
+                }
+
+                .new-department {
+                    z-index: 99999;
+                    border-top: 2px solid black; /* Додає товсту чорну лінію зверху клітинки */
+                }
+
+                .user-head {
+                    background-color: #42D29D;
+                }
+
+
+                @media print {
+                    @page {
+                        size: landscape; /* Альбомна орієнтація */
+                        margin: 0; /* Відсутність марджинів на сторінці */
+                    }
+                    body {
+                        margin: 0;
+                        padding: 0;
+                        height: 100%;
+                    }
+                    /* Приховування всіх елементів, крім таблиці */
+                    body * {
+                        visibility: hidden;
+                    }
+                    /* Стилі для таблиці */
+                    #basic-datatable, #basic-datatable * {
+                        visibility: visible;
+                        padding: 2px; /* Зменшення внутрішніх відступів клітинок таблиці */
+                        line-height: 1; /* Зменшення висоти рядків */
+                        font-size: 10px; /* Зменшення розміру шрифту */
+                    }
+                    #basic-datatable {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%; /* Повна ширина сторінки */
+                    }
+                }
+
+                .leader-change {
+                    border-top: 2px dashed silver; /* Робить лінію пунктирною та чорною */
+                }
+
+
+                #mySidebarButton {
+                  position: fixed;
+                  bottom: 20px;
+                  right: 20px;
+                  z-index: 1050; /* Вище, ніж більшість елементів */
+                }
+
+                .sticky-column {
+                    position: sticky;
+                    background-color: white;
+                }
+
+                .sticky-column:first-child {
+                    left: 0;
+                }
+
+                .sticky-column:nth-child(2) {
+                    left: 140px; /* Або використайте точну ширину першої колонки */
+                }
+                .sticky-column.user_name_column {
+                        z-index: 999;
+                        background-color: white;
+                    }
+
+                .sticky-head {
+                    position: sticky;
+                    top: 0;
+                    background-color: white; /* Встановлює фон, щоб зміст під заголовками не був видимим через них */
+                    z-index: 99; /* Забезпечує, що заголовки з'являться над іншими елементами */
+                }
+
+        </style>
+
+
+
+
+<div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="header-title">Інформація про працівників</h4>
+                    <p class="text-muted font-14">
+                      Загальна інформація про <br>відпрацювання/недопрацювання
+                    </p>
+                <!-- Dropdown для вибору місяця -->
+
+                <div class="dropdown-container">
+                    <!-- Date Range -->
+                    <div class="mb-8">
+                        <div class="row">
+                            <div class="col-4">
+                                <input type="text" id="search-inputVitalik" class="form-control" placeholder="Пошук...">
+                            </div>
+                            <div class="col-5">
+                                <input type="text" class="form-control" id="dateRangePicker">
+                            </div>
+                            <div class="col-1">
+                                <button onclick="printTable()" class="btn btn-primary">Друкувати таблицю</button></div>
+                            </div>
+                        <!--<input type="text" class="form-control date" id="singledaterange" data-toggle="date-picker" data-cancel-class="btn-warning">-->
+                    </div>
+                </div>
+
+
+                <div class="tab-content">
+                    <div class="tab-pane show active" id="basic-datatable-preview" data-table="basic-datatable">
+                        <div class="table-responsive" id="table-responsive-container">
+                            <table id="basic-datatable"  class="table dt-responsive nowrap w-100" style="max-height: 600px;">
+                                <thead>
+                                    <tr>
+                                        <th class="sticky-head" style="background-color: white;">Працівник</th>
+                                        <th class="sticky-head" style="background-color: white;">Відділ</th>
+                                        <th class="sticky-head" style="background-color: white;">Додатково<br>вийшов<br><span class="bottom-icon"><i class="dripicons-return"></i></span></th>
+                                        <th class="sticky-head" style="background-color: white;" >Відгули<br><span class="bottom-icon"><i class="dripicons-vibrate"></i></span></th>
+                                        <th class="sticky-head" style="background-color: white;">Відпустка<br>відгуляно/залишилося<br><span class="bottom-icon"><i class="dripicons-exit"></i></span></th> 
+                                        <th class="sticky-head" style="background-color: white;">Лікарняний<br><span class="bottom-icon"><i class="dripicons-pill"></i></span></th>
+                                        <th class="sticky-head" style="background-color: white;">Відрядження<br><span class="bottom-icon"><i class="dripicons-briefcase"></i></span></th>
+                                        <th class="sticky-head" style="background-color: white;" >Нез'ясовані<br>причини<br><span class="bottom-icon"><i class="dripicons-cross"></i></span></th>
+                                        <th class="sticky-head" style="background-color: white;">Відпросився<br><span class="bottom-icon"><i class="dripicons-media-previous"></i></span></th>
+                                        <th class="sticky-head" style="background-color: white;">Віддаленна<br>робота<br><span class="bottom-icon"><i class="dripicons-home"></i></span></th>
+                                        <th class="sticky-head" style="background-color: white;">За свій<br>рахунок<br><span class="bottom-icon"><i class="dripicons-hourglass"></i></span></th>
+                                        <th class="sticky-head" style="background-color: white;">Компенсації<br><span class="bottom-icon"><i class="dripicons-card"></i></span></th>
+
+                                        <th class="sticky-head" style="background-color: white;">Присутність на<br>роботі План</th>
+                                        <th class="sticky-head" style="background-color: white;">Присутність на<br>роботі Факт</th>
+                                        <th class="sticky-head" style="background-color: white;">Присутність на<br>роботі Різниця</th>
+                                        <th class="sticky-head" style="background-color: white;">Фонд РВ.<br>План</th>
+                                        <th class="sticky-head" style="background-color: white;">Фонд РВ.<br>Факт</th>
+                                        <th class="sticky-head" style="background-color: white;">Фонд РВ.<br>Різниця</th>
+
+                                        <th class="sticky-head" style="background-color: white;">Оформлений</th>
+                                        <th class="sticky-head" style="background-color: white;">Стаж</th>
+                                        <th class="sticky-head" style="background-color: white;">Вік</th>
+                                        <th class="sticky-head" style="background-color: white;">Дії</th>
+                                        <th class="sticky-head" style="background-color: white;display: none;">Сортування</th>
+                                    </tr>
+                                </thead>
+                            
+                            
+                                <tbody>
+                                    {% set previous = {'departament': None} %}
+                                    
+                                    {% for info in full_info %}
+
+                                    {% set special_class = '' %}
+                                    {% if previous.departament != info.user_dep_name %}
+                                        {% set special_class = 'new-department' %}
+                                    {% endif %}
+                                    {% set _ = previous.update({'departament': info.user_dep_name}) %}
+
+
+                                    {% set leader_change_class = '' %}
+                                    {% if previous.user_leader != info.user_leader %}
+                                        {% set leader_change_class = 'leader-change' %}
+                                    {% endif %}
+                                    {% set _ = previous.update({'user_leader': info.user_leader}) %}
+
+                                    <tr>
+                                        <td class="{{special_class}} sticky-column {{leader_change_class}}" {% if info.user_dep_head %} style="background-color: #dcdcdc;"{% else %} style="background-color: white;" {% endif %}><a href="profile-{{info.user_id}}" class="text-body fw-semibold">{{info.user_name}}</a></td>
+                                        <td class="{{special_class}} sticky-column {{leader_change_class}}" {% if info.user_dep_head %} style="background-color: #dcdcdc;"{% else %} style="background-color: white;"{% endif %}>{{info.user_dep_name}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.dodatcovo_one}} д. / {{info.dodatcovo_two}} г.</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.otgul}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.vidpustka_used}}  / {{info.vidpustka_diff}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.likarnjaniy}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.vidrjad}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.nezyasovano}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.vidprosivsya}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.vidrjad}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.mymoney}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.compensation}}</td>
+
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.prisutnist_plan}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.prisutnist_fact}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.prisutnist_differens}}</td>
+
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.fond_plan}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.fond_fact}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.fond_diff}}</td>
+
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.user_departament}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.user_starg}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}">{{info.user_age}}</td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}"><button><a href="report-{{info.user_id}}-{{selcted_years}}" target="_blank"><i class="dripicons-print"></i></a></button></td>
+                                        <td class="clickable-cell {{special_class}} {{leader_change_class}}" style="display: none;">{{info.num_in_list}}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    
+                                </tbody>
+                            </table>                                           
+                        </div> <!-- end preview-->
+                        </div> <!-- end preview-->  
+                    
+                    </div> <!-- end tab-content-->
+
+                </div> <!-- end card body-->
+            </div> <!-- end card -->
+        </div><!-- end col-->
+    </div>
+
+</div>
+        </div>
+        <!-- end row-->
+
+
+
+    </div>
+    <!-- container -->
+
+<!-- content -->
+
+
+
+
+<!-- Right Sidebar -->
+
+
+<div id="fake-scrollbar-container" style="position:fixed; bottom:0; left:0; width:100%; overflow-x:scroll;z-index: 9999;">
+    <div style="width:150%; height:1px;"></div> <!-- Внутрішній div повинен мати ширину, яка дорівнює або перевищує ширину таблиці -->
+</div>
+
+        <div class="rightbar-overlay"></div>
+        <!-- /End-bar -->
+
+
+<script type="text/javascript">
+function parseExperience(experienceText) {
+    const parts = experienceText.match(/(\d+) роки (\d+) місяці (\d+) днів/);
+    if (!parts) return 0; // Якщо формат не співпадає, повертаємо 0
+
+    const years = parseInt(parts[1], 10);
+    const months = parseInt(parts[2], 10);
+    const days = parseInt(parts[3], 10);
+
+    // Перетворюємо весь стаж у дні (припустимо, що рік = 365 днів, місяць = 30 днів)
+    return years * 365 + months * 30 + days;
+}
+
+let table = new DataTable('#basic-datatable', {
+    info: false,
+    paging: false,
+    order: [
+        [1, 'asc'], // Перша колонка для сортування
+        // Вказуємо, що колонка зі стажем має спеціальну логіку сортування
+    ],
+    columnDefs: [
+        { orderable: false, targets: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 22] },
+        { orderable: true, targets: [18, 19, 20, 21] },
+        {
+            targets: 19, // Замініть 'column_index_стаж' на індекс колонки зі стажем
+            render: function(data, type, row) {
+                if (type === 'sort' || type === 'type') {
+                    return parseExperience(data);
+                }
+                return data; // Для відображення повертаємо оригінальний текст
+            }
+        }
+    ]
+});
+
+// Скидання сортування після оновлення сторінки
+table.order([]).draw();
+
+$(document).ready(function() {
+    $('#basic-datatable').DataTable({
+        "lengthMenu": [[-1], ["All"]], // Приховати вибір кількості
+        "pageLength": 200 // Встановити постійну кількість на сторінці
+    });
+});
+
+$(document).ready(function() {
+    // Знаходимо елемент пошуку за його класом (або іншим ідентифікатором)
+    var searchInput = $('#basic-datatable_filter');
+
+    // Приховуємо елемент пошуку
+    searchInput.hide();
+});
+
+
+$(document).ready(function() {
+    // Ініціалізація DataTable
+    // Функція для оновлення позиції другої "липкої" колонки
+    function updateSecondColumnPosition() {
+        var firstColWidth = $('.sticky-column:first-child').outerWidth();
+        $('.sticky-column:nth-child(2)').css('left', (firstColWidth - 1) + 'px'); // Зміщуємо на 1 піксель менше
+    }
+
+    // Викликаємо функцію при ініціалізації та після кожного пошуку
+    updateSecondColumnPosition();
+    table.on('draw', function() {
+        updateSecondColumnPosition();
+    });
+
+    // Обробник події для поля пошуку
+    $('#search-inputVitalik').on('keyup', function() {
+        var searchText = $(this).val();
+        table.search(searchText).draw(); // Виконуємо пошук та перерисовуємо таблицю
+    });
+});
+
+
+
+function adjustFontSizeForPrinting() {
+    let table = document.getElementById('basic-datatable');
+    let originalFontSize = window.getComputedStyle(table).fontSize; // Зберігаємо первісний розмір шрифту
+
+    let maxHeight = 842; // Приблизна висота сторінки А4 в пікселях
+    let maxWidth = 1189; // Приблизна ширина сторінки А4 в пікселях (альбомна орієнтація)
+    let fontSize = 16; // Початковий розмір шрифту
+
+    while (table.scrollHeight > maxHeight || table.scrollWidth > maxWidth) {
+        fontSize--;
+        table.style.fontSize = fontSize + 'px';
+        if (fontSize < 5) break; // Уникнення занадто маленького шрифту
+    }
+
+    function restoreFontSize() {
+        table.style.fontSize = originalFontSize; // Відновлення первісного розміру шрифту
+        window.removeEventListener('afterprint', restoreFontSize);
+    }
+
+    window.addEventListener('afterprint', restoreFontSize);
+}
+
+function printTable() {
+    let originalContents = document.body.innerHTML;
+    let table = document.getElementById('basic-datatable');
+
+    adjustFontSizeForPrinting(table);
+
+    document.body.innerHTML = table.outerHTML; // Встановлюємо тільки таблицю як вміст тіла сторінки
+    window.print(); // Друк
+    document.body.innerHTML = originalContents; // Відновлення первісного вмісту сторінки
+}
+</script>
+
+
+<script>
+$(function() {
+    // Отримати параметри "start" і "end" з URL-адреси
+    const urlParams = new URLSearchParams(window.location.search);
+    const startDateParam = urlParams.get('start');
+    const endDateParam = urlParams.get('end');
+
+    // Встановити початкову і кінцеву дату на основі параметрів URL-адреси або на поточний місяць, якщо параметри відсутні
+    let startOfMonth, endOfMonth;
+    if (startDateParam && endDateParam) {
+        startOfMonth = moment(startDateParam);
+        endOfMonth = moment(endDateParam);
+    } else {
+        startOfMonth = moment().startOf('month');
+        endOfMonth = moment().endOf('month');
+    }
+
+    // Ініціалізувати датапікер з встановленими початковою і кінцевою датами
+    $('#dateRangePicker').daterangepicker({
+        locale: {
+          format: 'DD-MM-YYYY'
+        },
+        startDate: startOfMonth,
+        endDate: endOfMonth
+    }, function(start, end, label) {
+        window.location.href = `?start=${start.format('YYYY-MM-DD')}&end=${end.format('YYYY-MM-DD')}`;
+    });
+});
+
+
+
+
+
+document.getElementById('mySidebarButton').addEventListener('click', function() {
+  var sidebar = document.querySelector('.end-bar');
+  var overlay = document.querySelector('.rightbar-overlay');
+  
+  if (sidebar.style.right === '-100%') {
+    sidebar.style.right = '0';
+    overlay.style.display = 'block';
+  } else {
+    sidebar.style.right = '-100%';
+    overlay.style.display = 'none';
+  }
+});
+
+
+document.getElementById('resetBtnData').addEventListener('click', function() {
+  // Знайдіть всі елементи input та select у контейнері з фільтрами
+  var inputs = document.querySelectorAll('.end-bar input, .end-bar select');
+
+  // Пройдіться по кожному елементу та обнуліть його значення
+  inputs.forEach(function(input) {
+    switch(input.type) {
+      case 'checkbox':
+      case 'radio':
+        input.checked = false;
+        break;
+      default:
+        input.value = '';
+        break;
+    }
+  });
+
+  // Тут можна додати додатковий код, якщо потрібно виконати додаткові дії після скидання фільтрів
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelector('.btn-danger').addEventListener('click', function(e) {
+        e.preventDefault(); 
+
+        let departamentIds = [];
+        let companyIds = [];
+
+        document.querySelectorAll('input[name="departament"]:checked').forEach(function(checkbox) {
+            departamentIds.push(checkbox.value);
+        });
+
+        document.querySelectorAll('input[name="comp"]:checked').forEach(function(checkbox) {
+            companyIds.push(checkbox.value);
+        });
+
+        let queryString = '';
+        if (departamentIds.length > 0) {
+            queryString += 'departaments=' + departamentIds.join(',');
+        }
+        if (companyIds.length > 0) {
+            if (queryString.length > 0) {
+                queryString += '&';
+            }
+            queryString += 'companies=' + companyIds.join(',');
+        }
+
+        let newUrl = window.location.pathname + '?' + queryString;
+        window.location.href = newUrl; 
+    });
+});
+
+
+
+
+</script>
+
+
+<!-- bundle -->
+<script src="static/assets/js/vendor.min.js"></script>
+<script src="static/assets/js/app.min.js"></script>
+
+<!-- third party js -->
+<script src="static/assets/js/vendor/responsive.bootstrap5.min.js"></script>
+<script src="static/assets/js/vendor/buttons.bootstrap5.min.js"></script>
+<script src="static/assets/js/vendor/buttons.html5.min.js"></script>
+<script src="static/assets/js/vendor/buttons.flash.min.js"></script>
+<script src="static/assets/js/vendor/buttons.print.min.js"></script>
+<!-- third party js ends -->
+
+
+
+{% include 'base/footer.html' %}

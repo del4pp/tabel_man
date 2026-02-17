@@ -1,0 +1,300 @@
+{% include 'base/header.html' %}
+<style>
+    /* Стиль для підсвітки дат, що закінчуються */
+    .insurance-expiring {
+        color: red;
+        font-weight: bold;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <div class="page-title-right d-flex gap-2">
+                    <a href="/company-autopark/pdf" target="_blank" class="btn btn-primary text-white">
+                        <i class="fas fa-print me-1"></i> Роздрукувати звіт
+                    </a>
+                    <button type="button" class="btn btn-success text-white" data-bs-toggle="modal" data-bs-target="#addCarModal">
+                        <i class="fas fa-plus me-1"></i> Додати автомобіль
+                    </button>
+                </div>
+                <h4 class="page-title">Автомобілі компанії</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+    {% for car in cars %}
+    <div class="col-md-4 col-lg-3 mb-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ car.car_name }}</h5>
+                <p class="card-text">
+                    <strong>П.І.Б.:</strong> {{ car.location }}<br>
+                    <strong>Номер:</strong> {{ car.car_number }}<br>
+                    <strong>Марка/Модель:</strong> {{ car.car_name }}<br>
+                    <strong>Реєстрація:</strong> {{ car.company_name }}<br>
+                    <strong>План ТО:</strong> 
+                        <span class="{% if car.plan_to and (car.plan_to - today).days <= 5 %}insurance-expiring{% endif %}">
+                            {{ car.plan_to.strftime('%d-%m-%Y') if car.plan_to else 'Не вказано' }}
+                        </span><br>
+                    <strong>Держ. страхова:</strong> 
+                        <span class="{% if car.public_insurance and (car.public_insurance - today).days <= 5 %}insurance-expiring{% endif %}">
+                            {{ car.public_insurance.strftime('%d-%m-%Y') if car.public_insurance else 'Не вказано' }}
+                        </span><br>
+                    <strong>Держ. страхова компанія:</strong> {{ car.public_company or 'Не вказано' }}<br>
+                    <strong>КАСКО страхова:</strong> 
+                        <span class="{% if car.kasko_insurance and (car.kasko_insurance - today).days <= 5 %}insurance-expiring{% endif %}">
+                            {{ car.kasko_insurance.strftime('%d-%m-%Y') if car.kasko_insurance else 'Не вказано' }}
+                        </span><br>
+                    <strong>КАСКО страхова компанія:</strong> {{ car.kasko_company or 'Не вказано' }}<br>
+                    <strong>Дата оплати:</strong> {{ car.pay_date if car.pay_date else 'Не вказано' }}<br>
+                </p>
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-primary btn-sm edit-car" data-bs-toggle="modal" data-bs-target="#editCarModal" data-car-id="{{ car.id }}">Редагувати</button>
+                    <button class="btn btn-danger btn-sm delete-car" data-car-id="{{ car.id }}">Видалити</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+</div>
+
+<!-- Modal для додавання автомобіля -->
+<div class="modal fade" id="addCarModal" tabindex="-1" role="dialog" aria-labelledby="addCarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="addCarModalLabel">Додати автомобіль компанії</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCarForm">
+                    <div class="mb-3">
+                        <label for="location" class="form-label">П.І.Б.</label>
+                        <input type="text" id="location" name="location" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="car-number" class="form-label">Номер автомобіля</label>
+                        <input type="text" id="car-number" name="car_number" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="car-name" class="form-label">Модель/марка</label>
+                        <input type="text" id="car-name" name="car_name" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="company-name" class="form-label">Компанія</label>
+                        <select class="form-select" id="company-name" name="company_name">
+                            <option value="Дніпро-Скан-Сервіс">Дніпро-Скан-Сервіс</option>
+                            <option value="ТФ">ТФ</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="plan-to" class="form-label">План ТО</label>
+                        <input type="date" id="plan-to" name="plan_to" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="public-insurance" class="form-label">Держ. страхова</label>
+                        <input type="date" id="public-insurance" name="public_insurance" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="public-company" class="form-label">Держ. страхова компанія</label>
+                        <input type="text" id="public-company" name="public_company" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="kasko-insurance" class="form-label">КАСКО страхова</label>
+                        <input type="date" id="kasko-insurance" name="kasko_insurance" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="kasko-company" class="form-label">КАСКО страхова компанія</label>
+                        <input type="text" id="kasko-company" name="kasko_company" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="payment-date" class="form-label">Дата оплати</label>
+                        <input type="text" id="payment-date" name="payment_date" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Зберегти</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal для редагування автомобіля -->
+<div class="modal fade" id="editCarModal" tabindex="-1" role="dialog" aria-labelledby="editCarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="editCarModalLabel">Редагувати автомобіль</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editCarForm">
+                    <input type="hidden" id="edit-car-id" name="car_id">
+                    <div class="mb-3">
+                        <label for="edit-location" class="form-label">П.І.Б.</label>
+                        <input type="text" id="edit-location" name="location" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-car-number" class="form-label">Номер автомобіля</label>
+                        <input type="text" id="edit-car-number" name="car_number" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-car-name" class="form-label">Модель/марка</label>
+                        <input type="text" id="edit-car-name" name="car_name" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-company-name" class="form-label">Компанія</label>
+                        <select class="form-select" id="edit-company-name" name="company_name">
+                            <option value="Дніпро-Скан-Сервіс">Дніпро-Скан-Сервіс</option>
+                            <option value="ТФ">ТФ</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-plan-to" class="form-label">План ТО</label>
+                        <input type="date" id="edit-plan-to" name="plan_to" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-public-insurance" class="form-label">Держ. страхова</label>
+                        <input type="date" id="edit-public-insurance" name="public_insurance" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-public-company" class="form-label">Держ. страхова компанія</label>
+                        <input type="text" id="edit-public-company" name="public_company" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-kasko-insurance" class="form-label">КАСКО страхова</label>
+                        <input type="date" id="edit-kasko-insurance" name="kasko_insurance" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-kasko-company" class="form-label">КАСКО страхова компанія</label>
+                        <input type="text" id="edit-kasko-company" name="kasko_company" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-payment-date" class="form-label">Дата оплати</label>
+                        <input type="text" id="edit-payment-date" name="payment_date" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script>
+$(document).ready(function() {
+    // Додавання автомобіля
+    $('#addCarForm').submit(function(e) {
+        e.preventDefault();
+        const formData = {
+            car_number: $('#car-number').val(),
+            car_name: $('#car-name').val(),
+            company_name: $('#company-name').val(),
+            location: $('#location').val(),
+            plan_to: $('#plan-to').val() || null,
+            public_insurance: $('#public-insurance').val() || null,
+            public_company: $('#public-company').val(),
+            kasko_insurance: $('#kasko-insurance').val() || null,
+            kasko_company: $('#kasko-company').val(),
+            payment_date: $('#payment-date').val() || null,
+            avtopark: 1
+        };
+        $.ajax({
+            url: '/company-cars/add',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                $('#addCarModal').modal('hide');
+                $('#addCarForm')[0].reset();
+                alert('Автомобіль додано!');
+                window.location.reload();
+            },
+            error: function(xhr) {
+                console.error('Помилка при додаванні:', xhr.responseText);
+                alert('Помилка: ' + xhr.responseText);
+            }
+        });
+    });
+
+    // Завантаження даних для редагування
+    $('.edit-car').on('click', function() {
+        const carId = $(this).data('car-id');
+        $('#edit-car-id').val(carId);
+        $.ajax({
+            url: `/api/company-car/${carId}`,
+            type: 'GET',
+            success: function(data) {
+                $('#edit-location').val(data.location);
+                $('#edit-car-number').val(data.car_number);
+                $('#edit-car-name').val(data.car_name);
+                $('#edit-company-name').val(data.company_name);
+                $('#edit-plan-to').val(data.plan_to);
+                $('#edit-public-insurance').val(data.public_insurance);
+                $('#edit-public-company').val(data.public_company);
+                $('#edit-kasko-insurance').val(data.kasko_insurance);
+                $('#edit-kasko-company').val(data.kasko_company);
+                $('#edit-payment-date').val(data.payment_date);
+            },
+            error: function(xhr) {
+                alert('Помилка завантаження даних: ' + xhr.responseText);
+            }
+        });
+    });
+
+    // Редагування автомобіля
+    $('#editCarForm').submit(function(e) {
+        e.preventDefault();
+        const formData = {
+            car_id: $('#edit-car-id').val(),
+            car_number: $('#edit-car-number').val(),
+            car_name: $('#edit-car-name').val(),
+            company_name: $('#edit-company-name').val(),
+            location: $('#edit-location').val(),
+            plan_to: $('#edit-plan-to').val() || null,
+            public_insurance: $('#edit-public-insurance').val() || null,
+            public_company: $('#edit-public-company').val(),
+            kasko_insurance: $('#edit-kasko-insurance').val() || null,
+            kasko_company: $('#edit-kasko-company').val(),
+            payment_date: $('#edit-payment-date').val() || null
+        };
+        $.ajax({
+            url: '/company-cars/edit',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                $('#editCarModal').modal('hide');
+                alert('Автомобіль оновлено!');
+                window.location.reload();
+            },
+            error: function(xhr) {
+                alert('Помилка: ' + (xhr.responseText || 'Невідома помилка'));
+            }
+        });
+    });
+
+    // Видалення автомобіля
+    $('.delete-car').on('click', function() {
+        const carId = $(this).data('car-id');
+        if (confirm('Ви впевнені, що хочете видалити цей автомобіль?')) {
+            $.ajax({
+                url: `/company-cars/delete/${carId}`,
+                type: 'DELETE',
+                success: function(response) {
+                    alert('Автомобіль видалено!');
+                    window.location.reload();
+                },
+                error: function(xhr) {
+                    console.error('Помилка при видаленні:', xhr.responseText);
+                    alert('Помилка: ' + xhr.responseText);
+                }
+            });
+        }
+    });
+});
+</script>
+{% include 'base/footer.html' %}

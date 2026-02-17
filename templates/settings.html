@@ -1,0 +1,290 @@
+{% include 'base/header.html' %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<div class="container-fluid">
+   <!-- start page title -->
+   <div class="row">
+      <div class="col-12">
+         <div class="page-title-box">
+            <div class="page-title-right">
+               <ol class="breadcrumb m-0">
+                  <li class="breadcrumb-item"><a href="javascript: void(0);">Scania</a></li>
+                  <li class="breadcrumb-item"><a href="javascript: void(0);">Налаштування</a></li>
+                  <li class="breadcrumb-item active">Загальні</li>
+               </ol>
+            </div>
+            <h4 class="page-title">Налаштування</h4>
+         </div>
+      </div>
+   </div>
+   <!-- end page title -->
+
+   <div class="row">
+      <div class="col-sm-12">
+         <!-- Settings -->
+         <div class="card">
+            <div class="card-body">
+               <h4 class="header-title mt-0 mb-3">Загальні налаштування</h4>
+               <hr/>
+               <form method="post" action="{{ url_for('settings_page') }}" id="compensation-form">
+                  <div class="row">
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="compensation_cost" class="form-label">Вартість компенсації за розвезення (день, грн.)</label>
+                           <input type="number" class="form-control" id="compensation_cost" name="compensation_cost" value="{{ compensation_cost }}" min="0" step="1" required>
+                           <small class="form-text text-muted">Вкажіть вартість компенсації за один день розвезення в гривнях.</small>
+                        </div>
+                     </div>
+                  </div>
+                  <div class="text-end">
+                     <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                  </div>
+               </form>
+
+               <!-- OKKO API Key Settings -->
+               <div class="mt-4">
+                  <h5>Налаштування API</h5>
+                  <hr/>
+                  <form id="okko-api-form">
+                     <div class="row">
+                        <div class="col-md-8">
+                           <div class="mb-3">
+                              <label for="okko_api_key" class="form-label">Токен парсингу цін OKKO</label>
+                              <input type="text" class="form-control" id="okko_api_key" name="okko_api_key" value="{{ fuel_price_api_key }}" placeholder="Введіть API ключ для парсингу цін OKKO">
+                              <small class="form-text text-muted">Вкажіть API ключ для отримання актуальних цін на паливо з системи OKKO.</small>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="text-end">
+                        <button type="button" class="btn btn-info me-2" id="test-api-key">Перевірити API ключ</button>
+                        <button type="submit" class="btn btn-primary">Зберегти API ключ</button>
+                     </div>
+                  </form>
+               </div>
+
+               <!-- Telegram Scania Exclusions -->
+               <div class="mt-4">
+                  <h5>Telegram виключення Scania</h5>
+                  <div class="mb-3">
+                     <input type="text" class="form-control" id="scania_exclusion" placeholder="Введіть назву компанії">
+                     <button class="btn btn-primary mt-2" onclick="addExclusion('scania')">Додати</button>
+                  </div>
+                  <table class="table table-striped" id="scania_exclusions_table">
+                     <thead>
+                        <tr>
+                           <th>Назва компанії</th>
+                           <th>Дії</th>
+                        </tr>
+                     </thead>
+                     <tbody id="scania_exclusions_body">
+                        <!-- Список буде заповнюватися через JavaScript -->
+                     </tbody>
+                  </table>
+               </div>
+
+               <!-- Telegram TF Exclusions -->
+               <div class="mt-4">
+                  <h5>Telegram виключення TF</h5>
+                  <div class="mb-3">
+                     <input type="text" class="form-control" id="tf_exclusion" placeholder="Введіть назву компанії">
+                     <button class="btn btn-primary mt-2" onclick="addExclusion('tf')">Додати</button>
+                  </div>
+                  <table class="table table-striped" id="tf_exclusions_table">
+                     <thead>
+                        <tr>
+                           <th>Назва компанії</th>
+                           <th>Дії</th>
+                        </tr>
+                     </thead>
+                     <tbody id="tf_exclusions_body">
+                        <!-- Список буде заповнюватися через JavaScript -->
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+            <!-- end card-body -->
+         </div>
+         <!-- end card -->
+      </div>
+      <!-- end col -->
+   </div>
+   <!-- end row -->
+</div>
+<!-- container -->
+
+{% include 'base/footer.html' %}
+
+<script>
+   $(function () {
+       $('[data-bs-toggle="tooltip"]').tooltip();
+
+       // Завантаження списків виключень при завантаженні сторінки
+       loadExclusions('scania');
+       loadExclusions('tf');
+
+       // Обробка форми компенсації через AJAX
+       $('#compensation-form').on('submit', function(e) {
+           e.preventDefault();
+           $.ajax({
+               url: '{{ url_for("settings_page") }}',
+               method: 'POST',
+               data: $(this).serialize(),
+               success: function(response) {
+                   if (response.success) {
+                       alert('Вартість компенсації успішно оновлено!');
+                   } else {
+                       alert(response.message || 'Помилка при збереженні');
+                   }
+               },
+               error: function() {
+                   alert('Помилка сервера');
+               }
+           });
+       });
+
+       // Обробка кнопки тестування API ключа
+       $('#test-api-key').on('click', function() {
+           const button = $(this);
+           const originalText = button.text();
+
+           // Змінюємо текст кнопки на індикатор завантаження
+           button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Перевірка...');
+
+           $.ajax({
+               url: '{{ url_for("test_fuel_api_key") }}',
+               method: 'POST',
+               contentType: 'application/json',
+               success: function(response) {
+                   if (response.success) {
+                       const info = response.api_key_info;
+                       const status = response.is_valid ? '✅ Валідний' : '❌ Невалідний';
+
+                       let message = `Статус API ключа: ${status}\n\n`;
+                       message += `Ключ: ${info.current_key_masked}\n`;
+                       message += `Існує: ${info.key_exists ? 'Так' : 'Ні'}\n`;
+                       message += `Заголовки оновлені: ${info.headers_updated ? 'Так' : 'Ні'}`;
+
+                       alert(message);
+                   } else {
+                       alert('Помилка при тестуванні: ' + (response.error || 'Невідома помилка'));
+                   }
+               },
+               error: function() {
+                   alert('Помилка сервера при тестуванні API ключа');
+               },
+               complete: function() {
+                   // Повертаємо оригінальний текст кнопки
+                   button.prop('disabled', false).text(originalText);
+               }
+           });
+       });
+
+       // Обробка форми OKKO API ключа через AJAX
+       $('#okko-api-form').on('submit', function(e) {
+           e.preventDefault();
+           $.ajax({
+               url: '{{ url_for("save_fuel_api_key") }}',
+               method: 'POST',
+               contentType: 'application/json',
+               data: JSON.stringify({
+                   api_key: $('#okko_api_key').val()
+               }),
+               success: function(response) {
+                   if (response.success) {
+                       alert('API ключ OKKO успішно збережено!');
+                   } else {
+                       alert(response.message || 'Помилка при збереженні API ключа');
+                   }
+               },
+               error: function() {
+                   alert('Помилка сервера');
+               }
+           });
+       });
+   });
+
+   function addExclusion(type) {
+       let input = $(`#${type}_exclusion`);
+       let companyName = input.val().trim();
+
+       if (companyName === '') {
+           alert('Введіть назву компанії');
+           return;
+       }
+
+       $.ajax({
+           url: '{{ url_for("add_exclusion") }}',
+           method: 'POST',
+           contentType: 'application/json',
+           data: JSON.stringify({
+               type: type,
+               company_name: companyName
+           }),
+           success: function(response) {
+               if (response.success) {
+                   input.val('');
+                   loadExclusions(type);
+               } else {
+                   alert(response.message || 'Помилка при додаванні');
+               }
+           },
+           error: function() {
+               alert('Помилка сервера');
+           }
+       });
+   }
+
+   function deleteExclusion(type, id) {
+       if (confirm('Ви впевнені, що хочете видалити це виключення?')) {
+           $.ajax({
+               url: '{{ url_for("delete_exclusion") }}',
+               method: 'POST',
+               contentType: 'application/json',
+               data: JSON.stringify({
+                   type: type,
+                   id: id
+               }),
+               success: function(response) {
+                   if (response.success) {
+                       loadExclusions(type);
+                   } else {
+                       alert(response.message || 'Помилка при видаленні');
+                   }
+               },
+               error: function() {
+                   alert('Помилка сервера');
+               }
+           });
+       }
+   }
+
+   function loadExclusions(type) {
+       $.ajax({
+           url: '{{ url_for("get_exclusions") }}',
+           method: 'GET',
+           data: { type: type },
+           success: function(response) {
+               let tbody = $(`#${type}_exclusions_body`);
+               tbody.empty();
+               if (response.exclusions) {
+                   response.exclusions.forEach(function(exclusion) {
+                       tbody.append(`
+                           <tr>
+                               <td>${exclusion.company_name}</td>
+                               <td>
+                                   <button class="btn btn-danger btn-sm" onclick="deleteExclusion('${type}', ${exclusion.id})">
+                                       <i class="fas fa-trash"></i>
+                                   </button>
+                               </td>
+                           </tr>
+                       `);
+                   });
+               }
+           },
+           error: function() {
+               alert('Помилка при завантаженні виключень');
+           }
+       });
+   }
+</script>

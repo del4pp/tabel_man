@@ -1,0 +1,711 @@
+{% include 'base/header.html' %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/vendor/fullcalendar.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/icons.min.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/app-creative.min.css') }}">
+<link rel="stylesheet" href="/static/css/calendar.css">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+.avatar-xl {
+    width: 150px;
+    height: 150px;
+}
+.avatar-xl img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.insurance-expiring {
+    color: red;
+    font-weight: bold;
+}
+
+.select2-container {
+    width: 100% !important;
+    min-width: 200px;
+}
+
+.select2-container .select2-selection--multiple {
+    min-height: 38px;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 2px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #007bff;
+    border: 1px solid #007bff;
+    color: white;
+    padding: 3px 10px;
+    margin: 2px;
+    border-radius: 3px;
+    font-size: 13px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: white;
+    margin-right: 5px;
+    font-size: 14px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ffcccc;
+}
+
+.select2-dropdown {
+    z-index: 9999;
+    min-width: 200px;
+}
+
+.select2-results__option {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.okko-cards-section {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    border: 1px solid #dee2e6;
+}
+
+.okko-cards-title {
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.saving-animation {
+    position: relative;
+    overflow: hidden;
+}
+
+.saving-animation::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.3), transparent);
+    animation: saveSlide 1.5s ease-in-out;
+}
+
+@keyframes saveSlide {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    background-color: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 10px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.success {
+    background-color: #4CAF50;
+}
+
+.toast.error {
+    background-color: #FF5733;
+}
+
+.toast .close-btn {
+    margin-left: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.debug-info {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 5px;
+    font-size: 12px;
+}
+</style>
+
+<!-- Start Content -->
+<div class="container-fluid">
+    <!-- start page title -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="javascript: void(0);">Scania</a></li>
+                        <li class="breadcrumb-item"><a href="{{ url_for('company_cars') }}">Автомобілі компанії</a></li>
+                        <li class="breadcrumb-item active">Профіль автомобіля</li>
+                    </ol>
+                </div>
+                <h4 class="page-title">Профіль автомобіля: {{ car.car_name }}</h4>
+            </div>
+        </div>
+    </div>
+    <!-- end page title -->
+
+    <div class="row">
+        <div class="col-sm-12">
+            <!-- Profile -->
+            <div class="card">
+                <div class="card-body profile-user-box">
+                    <div class="row">
+                        <div class="col-sm-9">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <div class="avatar-xl">
+                                        <!--<img src="https://upload.wikimedia.org/wikipedia/ru/e/e7/%D0%9C%D0%BE%D0%BB%D0%BD%D0%B8%D1%8F_%D0%9C%D0%B0%D0%BA%D0%BA%D1%83%D0%B8%D0%BD.png" alt="" class="rounded-circle img-thumbnail" onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=No+Image';">-->
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div>
+                                        <h4 class="mt-1 mb-1">{{ car.car_name }}</h4>
+                                        <ul class="mb-0 list-inline">
+                                            <li class="list-inline-item me-3">
+                                                <h5 class="mb-1">Номер: {{ car.car_number }}</h5>
+                                                <h5 class="mb-1">Компанія: {{ car.company_name }}</h5>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end col -->
+                        <div class="col-sm-3">
+                            <div class="text-center mt-sm-0 mt-3 text-sm-end">
+                                <div style="text-align: right;">
+                                    <label for="pdf-year-select" class="form-label">Виберіть рік для звіту:</label>
+                                    <select class="form-select mb-3" id="pdf-year-select" onchange="location = this.value;">
+                                        {% for year in range(2020, 2031) %}
+                                        <option value="{{ url_for('company_cars_pdf', year=year, car_id=car.id) }}" {% if year == today.year %} selected {% endif %}>{{ year }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end col -->
+                    </div>
+                    <!-- end row -->
+                </div>
+                <!-- end card-body/ profile-user-box -->
+            </div>
+            <!-- end profile/ card -->
+        </div>
+        <!-- end col -->
+    </div>
+
+    <div class="row">
+        <div class="col-xl-4">
+            <!-- Car Information -->
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="header-title mt-0 mb-3">Інформація про автомобіль</h4>
+                    <hr/>
+                    <div class="text-start">
+                        <p class="text-muted"><strong>Номер:</strong> <span class="ms-2">{{ car.car_number }}</span></p>
+                        <p class="text-muted"><strong>Назва:</strong> <span class="ms-2">{{ car.car_name }}</span></p>
+                        <p class="text-muted"><strong>Компанія:</strong> <span class="ms-2">{{ car.company_name }}</span></p>
+                        <p class="text-muted"><strong>За ким закріплена:</strong> <span class="ms-2" id="assigned-user-display">{{ car.location }}</span></p>
+                        <p class="text-muted"><strong>Тип палива:</strong> <span class="ms-2">{{ car.fuel_type }}</span></p>
+                        <p class="text-muted"><strong>Норма палива:</strong> <span class="ms-2">{{ car.fuel_norm }} л/100 км</span></p>
+                        <p class="text-muted"><strong>Об'єм бака:</strong> <span class="ms-2">{{ car.tank_volume or 'Не вказано' }} л</span></p>
+                        <p class="text-muted"><strong>Початковий пробіг:</strong> <span class="ms-2">{{ car.initial_mileage or 'Не вказано' }} км</span></p>
+                        <p class="text-muted"><strong>Початковий залишок палива:</strong> <span class="ms-2">{{ car.initial_fuel_balance or 'Не вказано' }} л</span></p>
+                        <p class="text-muted"><strong>Дата створення:</strong> <span class="ms-2">{{ car.created_at.strftime('%d-%m-%Y') if car.created_at else 'Не вказано' }}</span></p>
+
+                        <!-- Секція карт OKKO -->
+                        <div class="okko-cards-section">
+                            <h6 class="okko-cards-title">Карти OKKO</h6>
+                            <select id="car-okko-cards" name="car_okko_cards" class="form-select" multiple style="width: 100%;">
+                                {% for card in okko_cards %}
+                                    <option value="{{ card.id }}"
+                                        {% if card.user_id == car.assigned_user_id %}selected{% endif %}>
+                                        {{ card.card_num }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-primary mt-2" id="save-okko-cards-btn" style="width: 100%;">
+                                <i class="fas fa-save me-1"></i> Зберегти карти OKKO
+                            </button>
+
+                            <!-- ДІАГНОСТИКА - видаліть після налагодження -->
+                            <div class="debug-info">
+                                <strong>Діагностика:</strong><br>
+                                Користувачів знайдено: {{ users_list|length if users_list else 0 }}<br>
+                                Карток OKKO знайдено: {{ okko_cards|length if okko_cards else 0 }}<br>
+                                Car assigned_user_id: {{ car.assigned_user_id or 'N/A' }}<br>
+                                {% if users_list %}
+                                    Перші 3 користувачі:
+                                    {% for user in users_list[:3] %}
+                                        {{ user.name }} (ID: {{ user.id }}){% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                                <br>
+                                {% if okko_cards %}
+                                    Перші 3 картки:
+                                    {% for card in okko_cards[:3] %}
+                                        {{ card.card_num }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-light" style="width: 100%;" onclick="openEditModal()">
+                                <i class="fas fa-edit me-1"></i> Редагувати дані автомобіля
+                            </button><br><br>
+                            {% if user_id == 11 %}
+                            <button type="button" class="btn btn-danger" style="width: 100%;" onclick="deleteCar({{ car.id }})">
+                                <i class="fas fa-trash me-1"></i> Видалити автомобіль
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Mileage History -->
+            <div class="col-sm-12">
+                <div class="card tilebox-one">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase mt-0">Історія пробігу та заправок</h6>
+                        <ul class="list-group">
+                            {% for record in mileage_history %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <strong>{{ record.date.strftime('%d-%m-%Y') }}</strong>: {{ record.mileage }} км
+                                    {% if record.fuel_added %} ({{ record.fuel_added }} л) {% endif %}
+                                </span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end col -->
+        <div class="col-xl-8">
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="card tilebox-one">
+                        <div class="card-body">
+                            <h6 class="text-muted text-uppercase mt-0">
+                                Загальний пробіг
+                                <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Сумарний пробіг автомобіля за рік."></i>
+                            </h6>
+                            <h2 class="m-b-20">{{ total_mileage|default('0') }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="card tilebox-one">
+                        <div class="card-body">
+                            <h6 class="text-muted text-uppercase mt-0">
+                                Загально заправлено
+                                <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" title="Сумарна кількість палива, доданого за рік."></i>
+                            </h6>
+                            <h2 class="m-b-20">{{ "%.1f"|format(total_fuel_added|default(0)) }} л</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- end col -->
+    </div>
+    <!-- end row -->
+</div>
+<!-- container -->
+
+<!-- Modal для редагування автомобіля -->
+<div id="editCarModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="editCarModalLabel" aria-hidden="true">
+    <form id="editCarForm">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="editCarModalLabel">Редагувати автомобіль</h4>
+                    <button type="button" class="btn-close" onclick="closeEditModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-car-id" name="car_id" value="{{ car.id }}">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if user_id == 11 %}
+                            <div class="mb-3">
+                                <label for="edit-car-number" class="form-label">Номер автомобіля</label>
+                                <input type="text" id="edit-car-number" name="car_number" class="form-control" value="{{ car.car_number }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-car-name" class="form-label">Назва автомобіля</label>
+                                <input type="text" id="edit-car-name" name="car_name" class="form-control" value="{{ car.car_name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-company-name" class="form-label">Компанія</label>
+                                <select class="form-select" id="edit-company-name" name="company_name" required>
+                                    <option value="Дніпро-Скан-Сервіс" {% if car.company_name == "Дніпро-Скан-Сервіс" %}selected{% endif %}>Дніпро-Скан-Сервіс</option>
+                                    <option value="ТФ" {% if car.company_name == "ТФ" %}selected{% endif %}>ТФ</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-assigned-user" class="form-label">За ким закріплена</label>
+                                <select class="form-select" id="edit-assigned-user" name="assigned_user_id">
+                                    <option value="">Оберіть користувача...</option>
+                                    {% if users_list %}
+                                        {% for user in users_list %}
+                                        <option value="{{ user.id }}"
+                                            {% if (car.assigned_user_id and car.assigned_user_id == user.id) or (not car.assigned_user_id and car.location == user.name) %}selected{% endif %}>
+                                            {{ user.name }}
+                                        </option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option disabled>Користувачі не завантажені</option>
+                                    {% endif %}
+                                </select>
+
+                                <!-- Діагностика для випадаючого списку -->
+                                <small class="text-muted">
+                                    Завантажено користувачів: {{ users_list|length if users_list else 0 }}
+                                </small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-fuel-type" class="form-label">Тип палива</label>
+                                <select class="form-select" id="edit-fuel-type" name="fuel_type" required>
+                                    <option value="Бензин" {% if car.fuel_type == "Бензин" %}selected{% endif %}>Бензин</option>
+                                    <option value="Дизель" {% if car.fuel_type == "Дизель" %}selected{% endif %}>Дизель</option>
+                                    <option value="Електрика" {% if car.fuel_type == "Електрика" %}selected{% endif %}>Електрика</option>
+                                    <option value="Газ" {% if car.fuel_type == "Газ" %}selected{% endif %}>Газ</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-fuel-norm" class="form-label">Норма палива (л/100 км)</label>
+                                <input type="number" id="edit-fuel-norm" name="fuel_norm" class="form-control" step="0.1" min="0" value="{{ car.fuel_norm }}" required>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            {% if user_id == 11 %}
+                            <div class="mb-3">
+                                <label for="edit-tank-volume" class="form-label">Об'єм бака (л)</label>
+                                <input type="number" id="edit-tank-volume" name="tank_volume" class="form-control" step="1" min="0" value="{{ car.tank_volume or '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-initial-mileage" class="form-label">Початковий пробіг (км)</label>
+                                <input type="number" id="edit-initial-mileage" name="initial_mileage" class="form-control" step="1" min="0" value="{{ car.initial_mileage or '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-initial-fuel-balance" class="form-label">Початковий залишок палива (л)</label>
+                                <input type="number" id="edit-initial-fuel-balance" name="initial_fuel_balance" class="form-control" step="0.1" min="0" value="{{ car.initial_fuel_balance or '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-created-at" class="form-label">Дата створення</label>
+                                <input type="date" id="edit-created-at" name="created_at" class="form-control" value="{{ car.created_at.strftime('%Y-%m-%d') if car.created_at else '' }}">
+                            </div>
+                            {% endif %}
+                            <div class="mb-3">
+                                <label for="edit-public-insurance" class="form-label">Страховка (Державна)</label>
+                                <input type="date" id="edit-public-insurance" name="public_insurance" class="form-control" value="{{ car.public_insurance.strftime('%Y-%m-%d') if car.public_insurance else '' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="edit-kasko-insurance" class="form-label">Страховка (КАСКО)</label>
+                                <input type="date" id="edit-kasko-insurance" name="kasko_insurance" class="form-control" value="{{ car.kasko_insurance.strftime('%Y-%m-%d') if car.kasko_insurance else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" onclick="closeEditModal()">Закрити</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCar()">Зберегти зміни</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<!-- Скрипти -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{{ url_for('static', filename='assets/js/vendor.min.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/app.min.js') }}"></script>
+
+<script>
+console.log('Script loaded');
+
+// Діагностика при завантаженні
+console.log('=== ДІАГНОСТИКА ===');
+console.log('Користувачів передано:', {{ users_list|length if users_list else 0 }});
+console.log('Карток OKKO передано:', {{ okko_cards|length if okko_cards else 0 }});
+console.log('Car ID:', {{ car.id }});
+console.log('Car assigned_user_id:', {{ car.assigned_user_id or 'null' }});
+
+// Функція показу повідомлень
+function showToast(message, type = "success") {
+    let toastContainer = document.getElementById("toast-container");
+    let toast = document.createElement("div");
+    toast.classList.add("toast", "show", type);
+    toast.innerHTML = `${message} <span class="close-btn" onclick="this.parentElement.remove()">✖</span>`;
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Глобальні змінні
+let currentAssignedUserId = {{ car.assigned_user_id or 'null' }};
+let modal;
+
+console.log('Initial currentAssignedUserId:', currentAssignedUserId);
+
+$(document).ready(function() {
+    console.log('Document ready');
+
+    // Initialize Select2 for OKKO cards
+    $('#car-okko-cards').select2({
+        placeholder: "Оберіть карти OKKO для автомобіля...",
+        allowClear: true,
+        closeOnSelect: false,
+        width: '100%',
+        dropdownAutoWidth: true,
+        language: {
+            noResults: function() {
+                return "Карти не знайдені";
+            },
+            searching: function() {
+                return "Пошук...";
+            }
+        }
+    });
+
+    // Set minimum width for Select2 container
+    $('#car-okko-cards').next('.select2-container').css('min-width', '220px');
+
+    // Логуємо кількість опцій у Select2
+    console.log('Select2 OKKO cards options count:', $('#car-okko-cards option').length);
+    console.log('Selected OKKO cards:', $('#car-okko-cards').val());
+});
+
+// Save OKKO cards button event handler
+document.getElementById('save-okko-cards-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    console.log('Save OKKO cards button clicked');
+
+    const selectedCards = $('#car-okko-cards').val() || [];
+    const carId = {{ car.id }};
+
+    // ВИПРАВЛЕНО: Беремо актуальний ID користувача з випадаючого списку або поточне значення
+    let assignedUserId = currentAssignedUserId;
+    const assignedUserSelect = document.getElementById('edit-assigned-user');
+    if (assignedUserSelect && assignedUserSelect.value) {
+        assignedUserId = assignedUserSelect.value;
+    }
+
+    console.log('Selected cards:', selectedCards);
+    console.log('Car ID:', carId);
+    console.log('Current assigned user ID:', currentAssignedUserId);
+    console.log('Using assigned user ID:', assignedUserId);
+
+    const saveButton = this;
+    const originalText = saveButton.innerHTML;
+
+    // Disable button and show loading
+    saveButton.disabled = true;
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Збереження...';
+
+    // Add saving animation
+    document.querySelector('.okko-cards-section').classList.add('saving-animation');
+
+    // Send AJAX request
+    fetch('/api/save_car_okko_cards_company', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            car_id: carId,
+            okko_cards: selectedCards,
+            assigned_user_id: assignedUserId  // Використовуємо оновлений ID
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            showToast("Карти OKKO успішно збережені!", "success");
+        } else {
+            showToast("Помилка: " + (data.error || 'Невідома помилка'), "error");
+        }
+    })
+    .catch(error => {
+        console.error('Ajax error:', error);
+        showToast("Помилка при збереженні карт OKKO", "error");
+    })
+    .finally(() => {
+        // Restore button state
+        saveButton.disabled = false;
+        saveButton.innerHTML = originalText;
+        document.querySelector('.okko-cards-section').classList.remove('saving-animation');
+    });
+});
+
+// Модальне вікно функції
+function openEditModal() {
+    console.log('Opening modal');
+    modal = new bootstrap.Modal(document.getElementById('editCarModal'));
+    modal.show();
+}
+
+function closeEditModal() {
+    console.log('Closing modal');
+    if (modal) {
+        modal.hide();
+    }
+}
+
+function saveCar() {
+    console.log('Save car clicked');
+
+    const formData = {
+        car_id: {{ car.id }},
+        {% if user_id == 11 %}
+        car_number: document.getElementById('edit-car-number').value,
+        car_name: document.getElementById('edit-car-name').value,
+        company_name: document.getElementById('edit-company-name').value,
+        assigned_user_id: document.getElementById('edit-assigned-user').value || null,
+        fuel_type: document.getElementById('edit-fuel-type').value,
+        fuel_norm: document.getElementById('edit-fuel-norm').value,
+        tank_volume: document.getElementById('edit-tank-volume').value || null,
+        initial_mileage: document.getElementById('edit-initial-mileage').value || null,
+        initial_fuel_balance: document.getElementById('edit-initial-fuel-balance').value || null,
+        created_at: document.getElementById('edit-created-at').value || null,
+        {% endif %}
+        public_insurance: document.getElementById('edit-public-insurance').value || null,
+        kasko_insurance: document.getElementById('edit-kasko-insurance').value || null
+    };
+
+    console.log('Form data to save:', formData);
+
+    fetch('/company-cars/edit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        console.log('Save response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Save response data:', data);
+        if (data.success) {
+            closeEditModal();
+            showToast("Автомобіль успішно оновлено!", "success");
+
+            // Оновлюємо дані на сторінці
+            {% if user_id == 11 %}
+            document.querySelector('h4.page-title').textContent = 'Профіль автомобіля: ' + formData.car_name;
+            document.querySelector('.profile-user-box h4.mt-1.mb-1').textContent = formData.car_name;
+            document.querySelector('.text-start p:nth-child(1) span').textContent = formData.car_number;
+            document.querySelector('.text-start p:nth-child(2) span').textContent = formData.car_name;
+            document.querySelector('.text-start p:nth-child(3) span').textContent = formData.company_name;
+
+            // Оновлюємо відображення призначеного користувача
+            const assignedUserSelect = document.getElementById('edit-assigned-user');
+            const selectedOption = assignedUserSelect.options[assignedUserSelect.selectedIndex];
+            const assignedUserName = selectedOption && selectedOption.value ? selectedOption.text : 'Не призначено';
+            document.querySelector('#assigned-user-display').textContent = assignedUserName;
+
+            document.querySelector('.text-start p:nth-child(5) span').textContent = formData.fuel_type;
+            document.querySelector('.text-start p:nth-child(6) span').textContent = formData.fuel_norm + ' л/100 км';
+
+            // Оновлюємо currentAssignedUserId для збереження карток
+            currentAssignedUserId = formData.assigned_user_id;
+            console.log('Updated currentAssignedUserId:', currentAssignedUserId);
+            {% endif %}
+        } else {
+            showToast('Помилка: ' + (data.error || 'Невідома помилка'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Save error:', error);
+        showToast("Помилка збереження", "error");
+    });
+}
+
+{% if user_id == 11 %}
+function deleteCar(carId) {
+    if (confirm('Ви впевнені, що хочете видалити цей автомобіль?')) {
+        fetch('/company-cars/delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ car_id: carId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast("Автомобіль видалено!", "success");
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("company_cars") }}';
+                }, 1000);
+            } else {
+                showToast('Помилка: ' + (data.error || 'Невідома помилка'), 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showToast('Помилка видалення', 'error');
+        });
+    }
+}
+{% endif %}
+
+// Initialize tooltips
+$(function () {
+    $('[data-bs-toggle="tooltip"]').tooltip();
+});
+
+console.log('All scripts loaded successfully');
+</script>
+
+{% include 'base/footer.html' %}

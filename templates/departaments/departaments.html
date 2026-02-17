@@ -1,0 +1,161 @@
+{% include 'base/header.html' %}
+
+<!-- Start Content-->
+                    <div class="container-fluid">
+
+                        <!-- start page title -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="page-title-box">
+                                    {% if user_info.user_access == 1 %}
+                                    <div class="page-title-right">
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#standard-modal">Додати відділ</button>
+                                    </div>
+                                    {% endif %}
+                                    <h4 class="page-title">Відділи</h4>
+                                </div>
+                            </div>
+                        </div>     
+                        <!-- end page title --> 
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row mb-2">
+                
+                                        <div class="table-responsive">
+                                            <form method="post" action="save-position-departaments">
+                                            <table class="table table-centered table-striped dt-responsive nowrap w-100" id="products-datatable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Відділ</th>
+                                                        <th>Керівник відділу</th>
+                                                        <th>Кількість працівників у відділі</th>
+                                                        {% if user_info.user_access == 1 %}<th>Порядок сортування</th>
+                                                        <th style="width: 75px;">Action</th>{% endif %}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for departament in departament_list %}
+                                                    <tr>
+                                                        <td class="table-user">
+                                                            <a href="departament-{{departament.id}}" class="text-body fw-semibold"><b>{{departament.name}}</b></a>
+                                                        </td>
+                                                        <td>
+                                                            <a href="javascript:void(0);" class="text-body fw-semibold">{{departament.dep_leader}}</a>
+                                                        </td>
+                                                        <td>
+                                                            {{departament.count_users}}
+                                                        </td>
+                                                        {% if user_info.user_access == 1 %}
+                                                        <td>
+                                                            <input type="hidden" name="departament_id" value="{{ departament.id }}">
+                                                            <input type="number" name="order" value="{{ departament.position }}" class="form-control">
+                                                        </td>
+                                                        <td>
+                                                            <a href="#" class="action-icon"  data-bs-toggle="modal" data-bs-target="#standard-modal-{{departament.id}}"> <i class="mdi mdi-square-edit-outline"></i></a>
+                                                            <a href="departament-remove-{{departament.id}}" class="action-icon" onclick="return confirmDelete()"> <i class="mdi mdi-delete"></i></a>
+                                                        </td>
+                                                        {% endif %}
+                                                    </tr>
+
+
+
+                                                    <!-- Standard modal -->
+                                                    <div id="standard-modal-{{departament.id}}" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+                                                        <form method="post" action="departaments-edet">
+                                                            <input type="hidden" name="edit-dep_id" value="{{departament.id}}">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h4 class="modal-title" id="standard-modalLabel">Редагувати відділ</h4>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <div class="mb-3">
+                                                                        <label for="simpleinput" class="form-label">Назва відділу</label>
+                                                                        <input type="text" id="simpleinput" class="form-control" name="edit-dep-name" value="{{departament.name}}">
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <label for="example-select" class="form-label">Керівник</label>
+                                                                        <select class="form-select" id="example-select" name="edit-leader">
+                                                                            <option value="0">Не вказано</option>
+                                                                            {% for user in user_list %}
+                                                                                <option value="{{user.id}}" {% if user.user_name == departament.dep_leader %} selected {% endif %} >{{user.user_name}}</option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+
+                                                                </div>      
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                                                                    <button type="submit" class="btn btn-primary">Save changes</button>
+                                                                </div>
+                                                            </div><!-- /.modal-content -->
+                                                        </div><!-- /.modal-dialog -->
+                                                        </form>
+                                                    </div><!-- /.modal -->
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                            <div class="text-end mt-3">
+                                                <button type="submit" class="btn btn-primary">Зберегти</button>
+                                            </div>
+                                        </form>
+                                        </div>
+                                    </div> <!-- end card-body-->
+                                </div> <!-- end card-->
+                            </div> <!-- end col -->
+                        </div>
+                        <!-- end row -->
+
+                    </div>
+                    <!-- container -->
+
+<!-- Standard modal -->
+<div id="standard-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+    <form method="post" accept="departaments">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="standard-modalLabel">Додати відділ</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+				    <label for="simpleinput" class="form-label">Назва відділу</label>
+				    <input type="text" id="simpleinput" class="form-control" name="dep-name">
+				</div>
+				<div class="mb-3">
+				    <label for="example-select" class="form-label">Керівник</label>
+				    <select class="form-select" id="example-select" name="leader">
+                        <option value="0">Не вказано</option>
+				        {% for user in user_list %}
+                            <option value="{{user.id}}">{{user.user_name}}</option>
+                        {% endfor %}
+				    </select>
+				</div>
+
+            </div>		
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+    </form>
+</div><!-- /.modal -->
+
+
+<script>
+    function confirmDelete() {
+    return confirm("Ви впевнені, що хочете видалити цей відділ?");
+}
+
+</script>
+
+
+</div>
+
+{% include 'base/footer.html' %}

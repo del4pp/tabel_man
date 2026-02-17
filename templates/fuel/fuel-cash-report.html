@@ -1,0 +1,214 @@
+{% include 'base/header.html' %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <h4 class="page-title">Компенсація витрат палива за готівку</h4>
+                <p>{{ avg_price|safe }}</p>
+                <div class="page-title-right" style="display: flex; gap: 10px; align-items: center;">
+                    <select class="form-select" id="month-select" onchange="updateUrl('month', this.value)"
+                        style="width: 150px;">
+                        {% for month in months %}
+                        <option value="{{ loop.index }}" {% if loop.index==selected_month %}selected{% endif %}>
+                            {{ month }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <select class="form-select" id="year-select" onchange="updateUrl('year', this.value)"
+                        style="width: 120px;">
+                        {% for year in years %}
+                        <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>
+                            {{ year }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% if user_info.id == 11 %}
+                    <button type="button" class="btn btn-primary" id="update-prices-btn" style="white-space: nowrap;">
+                        <i class="fas fa-sync-alt"></i> Оновити ціни
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table" id="fuel-table">
+                            <thead>
+                                <tr>
+                                    <th>ПІБ <i class="fas fa-info-circle" title="Повне ім'я водія"></i></th>
+                                    <th>км <i class="fas fa-info-circle" title="Кілометри в день в дві сторони"></i>
+                                    </th>
+                                    <th>Тип палива <i class="fas fa-info-circle"
+                                            title="Використовуваний тип палива"></i></th>
+                                    <th>Норма в день <i class="fas fa-info-circle"
+                                            title="Норма витрати палива на один робочий день (л)"></i></th>
+                                    <th>Днів поїздок <i class="fas fa-info-circle"
+                                            title="Кількість робочих днів з поїздками"></i></th>
+                                    <th>Витрати за місяць <i class="fas fa-info-circle"
+                                            title="Загальна витрата палива за місяць (л)"></i></th>
+                                    <th>Середня вартість, грн <i class="fas fa-info-circle"
+                                            title="Середня ціна палива за останні 5 днів"></i></th>
+                                    <th>Сума, грн <i class="fas fa-info-circle" title="Загальна сума компенсації"></i>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cash_driver in cash_fuel_data %}
+                                <tr>
+                                    <td>
+                                        <center>{{ cash_driver['driver_name'] }}</center>
+                                    </td>
+                                    <td>
+                                        <center>{{ cash_driver['distance'] }}</center>
+                                    </td>
+                                    <td>
+                                        <center>{{ cash_driver['fuel_type'] }}</center>
+                                    </td>
+                                    <td>
+                                        <center>{{ cash_driver['day_norm'] }}</center>
+                                    </td>
+                                    <td>
+                                        <center>{{ cash_driver['travel_days'] }}</center>
+                                    </td>
+                                    <td>
+                                        <center>{{ cash_driver['total_fuel_usage'] }}</center>
+                                    </td>
+                                    <td>
+                                        <center>{{ "%.2f"|format(cash_driver['avg_fuel_price']) if
+                                            cash_driver['avg_fuel_price'] is not none else '0.00' }}</center>
+                                    </td>
+                                    <td>
+                                        <center class="approx-cost">{{ cash_driver['total_cost'] | format_thousands }}
+                                        </center>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% if not cash_fuel_data %}
+                                <tr>
+                                    <td colspan="8" class="text-center">Немає записів про компенсації витрат за готівку
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="7" class="text-end"><strong>Загальна сума:</strong></td>
+                                    <td id="total-sum" class="text-center"><strong>0.00</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="text-end mt-3">
+                        <a type="button" class="btn btn-success"
+                            href="/download_fuel_cash_report/{{selected_month}}/{{selected_year}}"
+                            target="_blank">Скачати в PDF</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        function updateUrl(paramName, paramValue) {
+            let currentUrl = new URL(window.location.href);
+            if (paramValue !== "") {
+                currentUrl.searchParams.set(paramName, paramValue);
+            } else {
+                currentUrl.searchParams.delete(paramName);
+            }
+            window.location.href = currentUrl.toString();
+        }
+
+        const monthSelect = document.getElementById("month-select");
+        const yearSelect = document.getElementById("year-select");
+        monthSelect.addEventListener("change", (e) => updateUrl('month', e.target.value));
+        yearSelect.addEventListener("change", (e) => updateUrl('year', e.target.value));
+
+        // Обчислення та відображення загальної суми
+        function calculateTotal() {
+            const totalCells = document.querySelectorAll('.approx-cost');
+            let total = 0;
+            totalCells.forEach(cell => {
+                // Видаляємо всі пробіли перед парсингом
+                const costValue = parseFloat(cell.textContent.replace(/\s/g, '')) || 0;
+                total += costValue;
+            });
+            const formattedTotal = Math.round(total).toLocaleString('uk-UA');
+            document.getElementById('total-sum').innerHTML = `<strong>${formattedTotal}</strong>`;
+        }
+
+        // Виклик функції після завантаження сторінки
+        calculateTotal();
+
+        // Обробка кнопки оновлення цін
+        const updatePricesBtn = document.getElementById('update-prices-btn');
+        if (updatePricesBtn) {
+            updatePricesBtn.addEventListener('click', async () => {
+                // Блокуємо кнопку під час виконання
+                updatePricesBtn.disabled = true;
+                updatePricesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Оновлення...';
+
+                try {
+                    const response = await fetch('/api/update-fuel-prices', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        alert(data.message);
+                        // Оновлюємо сторінку через 2 секунди
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        alert('Помилка: ' + (data.error || 'Невідома помилка'));
+                        updatePricesBtn.disabled = false;
+                        updatePricesBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Оновити ціни';
+                    }
+                } catch (error) {
+                    console.error('Помилка при оновленні цін:', error);
+                    alert('Помилка з\'єднання з сервером');
+                    updatePricesBtn.disabled = false;
+                    updatePricesBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Оновити ціни';
+                }
+            });
+        }
+    });
+</script>
+
+<style type="text/css">
+    th {
+        text-align: center;
+    }
+
+    th i {
+        margin-left: 5px;
+        cursor: pointer;
+        color: #555;
+    }
+
+    th i:hover {
+        color: #000;
+    }
+
+    tfoot td {
+        font-size: 1.1em;
+        padding: 10px;
+    }
+</style>
+
+{% include 'base/footer.html' %}

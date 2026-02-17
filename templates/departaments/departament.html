@@ -1,0 +1,88 @@
+{% include 'base/header.html' %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+
+<!-- Start Content-->
+<div class="container-fluid">
+
+    <!-- start page title -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <h4 class="page-title">Працівники відділу</h4>
+            </div>
+        </div>
+    </div>     
+    <!-- end page title --> 
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row mb-2">
+
+                    <form id="update-sort-order-form">
+                        <div class="table-responsive">
+                            <table class="table table-centered table-striped dt-responsive nowrap w-100" id="products-datatable">
+                                <thead>
+                                    <tr>
+                                        <th>ПІБ</th>
+                                        <th>Керівник команди (?)</th>
+                                        {% if user_info.id == 11 %}
+                                        <th>Порядок сортування</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in user_list %}
+                                    <tr>
+                                        <td class="table-user">
+                                            <a href="profile-{{ user.id }}" class="text-body fw-semibold">{{ user.user_name }}</a>
+                                        </td>
+                                        <td>
+                                            {{ user.head }} <!-- Відображення user.head замість user.departament -->
+                                        </td>
+                                        {% if user_info.id == 11 %}
+                                        <td>
+                                            <input type="number" name="sort_order_{{ user.id }}" value="{{ loop.index }}" class="form-control">
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>  
+                        </div>
+                        <button type="submit" class="btn btn-primary">Зберегти</button>
+                    </form>
+                </div> <!-- end card-body-->
+            </div> <!-- end card-->
+        </div> <!-- end col -->
+    </div>
+    <!-- end row -->
+
+</div>
+<!-- container -->
+
+
+<script>
+document.getElementById('update-sort-order-form').addEventListener('submit', function(e) {
+    e.preventDefault(); // Запобігання стандартній поведінці відправлення форми
+
+    const formData = new FormData(this); // Збір даних форми
+
+    // Відправлення даних на сервер
+    fetch('/departament-{{departament_id}}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data); // Обробка відповіді від сервера
+        location.reload();  
+        // Тут можна додати логіку для відображення повідомлення про успіх або помилку
+    })
+    .catch(error => console.error('Error:', error));
+});
+</script>
+
+{% include 'base/footer.html' %}

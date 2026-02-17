@@ -1,0 +1,426 @@
+{% include 'base/header.html' %}
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<style type="text/css">
+    #toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+    }
+
+    .toast {
+        display: flex;
+        align-items: center;
+        background-color: #333;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 10px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    }
+
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .toast.success {
+        background-color: #4CAF50;
+    }
+
+    .toast.error {
+        background-color: #FF5733;
+    }
+
+    .toast .close-btn {
+        margin-left: 10px;
+        cursor: pointer;
+        font-weight: bold;
+    }
+
+    .info-icon {
+        font-size: 14px;
+        margin-left: 5px;
+        cursor: pointer;
+        color: #007bff;
+    }
+
+    .info-icon:hover {
+        color: #0056b3;
+    }
+
+    .delete-btn {
+        background: none;
+        border: none;
+        color: #888;
+        padding: 0;
+        margin-left: 10px;
+        cursor: pointer;
+    }
+
+    .delete-btn:hover {
+        color: #d9534f;
+    }
+
+    .fuel-card-select {
+        min-height: 38px;
+        height: auto;
+    }
+
+    .fuel-card-select option:checked {
+        background-color: #007bff;
+        color: white;
+    }
+
+    /* Для браузеров, которые поддерживают multiple select стили */
+    .fuel-card-select[multiple] {
+        padding: 2px;
+    }
+
+    .select2-container {
+    width: 100% !important;
+    min-width: 200px;
+}
+
+.select2-container .select2-selection--multiple {
+    min-height: 38px;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 2px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #007bff;
+    border: 1px solid #007bff;
+    color: white;
+    padding: 3px 10px;
+    margin: 2px;
+    border-radius: 3px;
+    font-size: 13px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: white;
+    margin-right: 5px;
+    font-size: 14px;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ffcccc;
+}
+
+.select2-dropdown {
+    z-index: 9999;
+    min-width: 200px;
+}
+
+.select2-results__option {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+/* Анимация сохранения */
+.saving-animation {
+    position: relative;
+    overflow: hidden;
+}
+
+.saving-animation::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.3), transparent);
+    animation: saveSlide 1.5s ease-in-out;
+}
+
+@keyframes saveSlide {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Ширина колонки OKKO */
+#fuel-table th:last-child,
+#fuel-table td:last-child {
+    min-width: 220px;
+    width: 220px;
+}
+</style>
+
+<!-- Start Content-->
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <h4 class="page-title">Облік витрат пального</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <label class="form-check-label me-2" for="car-filter">
+                                Показувати тільки з машинами
+                            </label>
+                            <input type="checkbox" id="car-filter" class="form-check-input">
+                        </div>
+                        <input type="text" id="search-input" class="form-control w-25" placeholder="Пошук по користувачах...">
+                    </div>
+
+                    <div class="table-responsive">
+                        <form id="fuel-form">
+                            <table class="table table-centered table-striped dt-responsive nowrap w-100" id="fuel-table">
+                                <thead>
+                                    <tr>
+                                        <th>ПІБ <span class="info-icon" title="Повне ім'я співробітника">ℹ️</span></th>
+                                        <th>Марка авто <span class="info-icon" title="Марка транспортного засобу">ℹ️</span></th>
+                                        <th>Км <span class="info-icon" title="Відстань яку працівник проїжджає кожного дня (в обидві сторони)">ℹ️</span></th>
+                                        <th>Витрати на 100 км <span class="info-icon" title="Витрати пального на 100 км шляху">ℹ️</span></th>
+                                        <th>Тип палива <span class="info-icon" title="Тип палива, що використовується в автомобілі">ℹ️</span></th>
+                                        <th>Компенсація <span class="info-icon" title="Компенсація поливні карти або готівка">ℹ️</span></th>
+                                        <th>Розвозка <span class="info-icon" title="Чи працівник бере участь у розвозці">ℹ️</span></th>
+                                        <th>OKKO <span class="info-icon" title="Карта працівника">ℹ️</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="user-table-body">
+                                    {% for record in user_list %}
+                                        {% set has_car = record.car_brand not in ['None', ''] %}
+                                        <tr class="user-row" data-has-car="{{ has_car }}" id="row-{{ record.user_id }}">
+                                            <td>
+                                                {{ record.driver_name }}
+                                                <button class="delete-btn" data-id="{{ record.user_id }}">
+                                                    <i class="fa fa-trash"></i>
+                                                </button>
+                                            </td>
+                                            <td>
+                                                <input type="text" name="car_brand[{{ record.user_id }}]" value="{{ record.car_brand }}" class="form-control car-brand">
+                                            </td>
+                                            <td>
+                                                <input type="number" name="km[{{ record.user_id }}]" value="{{ record.km }}" class="form-control km">
+                                            </td>
+                                            <td>
+                                                <input type="number" step="0.1" name="fuel_usage[{{ record.user_id }}]" value="{{ record.fuel_usage }}" class="form-control fuel-usage">
+                                            </td>
+                                            <td>
+                                                <select name="fuel_type[{{ record.user_id }}]" class="form-select fuel-type">
+                                                    <option value="Бензин" {% if record.fuel_type == 'Бензин' %}selected{% endif %}>Бензин</option>
+                                                    <option value="Дизель" {% if record.fuel_type == 'Дизель' %}selected{% endif %}>Дизель</option>
+                                                    <option value="Газ" {% if record.fuel_type == 'Газ' %}selected{% endif %}>Газ</option>
+                                                    <option value="Електричний" {% if record.fuel_type == 'Електричний' %}selected{% endif %}>Електричний</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select name="compensation_type[{{ record.user_id }}]" class="form-select">
+                                                    <option value="card" {% if record.compensation_type == 'card' %}selected{% endif %}>Паливна карта</option>
+                                                    <option value="cash" {% if record.compensation_type == 'cash' %}selected{% endif %}>Готівка</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="checkbox" name="transportation[{{ record.user_id }}]" class="form-check-input transportation-checkbox" data-user-id="{{ record.user_id }}" {% if record.transportation == 1 %}checked{% endif %}>
+                                            </td>
+                                            <td>
+                                                <select name="fuel_card[{{ record.user_id }}]" class="form-select fuel-card-select" multiple data-user-id="{{ record.user_id }}" style="width: 100%;">
+                                                    {% for card in okko_cards %}
+                                                        <option value="{{ card.id }}"
+                                                            {% if card.user_id == record.user_id %}selected{% endif %}>
+                                                                {{ card.card_num }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <div class="text-end mt-3">
+                                <button type="button" class="btn btn-primary" onclick="submitFuelForm()">Зберегти</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    document.getElementById('car-filter').addEventListener('change', function() {
+        const filterEnabled = this.checked;
+        const rows = document.querySelectorAll('#user-table-body .user-row');
+
+        rows.forEach(row => {
+            const hasCar = row.getAttribute('data-has-car') === 'True';
+            if (filterEnabled && !hasCar) {
+                row.style.display = 'none';
+            } else {
+                row.style.display = '';
+            }
+        });
+    });
+
+    document.getElementById("search-input").addEventListener("input", function () {
+        let searchValue = this.value.toLowerCase();
+        document.querySelectorAll(".user-row").forEach(function (row) {
+            let userName = row.children[0].textContent.toLowerCase();
+            row.style.display = userName.includes(searchValue) ? "" : "none";
+        });
+    });
+
+    function showToast(message, type = "success") {
+        let toastContainer = document.getElementById("toast-container");
+
+        let toast = document.createElement("div");
+        toast.classList.add("toast", "show", type);
+        toast.innerHTML = `${message} <span class="close-btn" onclick="this.parentElement.remove()">✖</span>`;
+
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            toast.classList.remove("show");
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация Select2 для всех селектов с картами OKKO
+    $('.fuel-card-select').select2({
+        placeholder: "Оберіть карти OKKO...",
+        allowClear: true,
+        closeOnSelect: false, // Не закрывать при выборе
+        width: '100%', // Принудительная ширина
+        dropdownAutoWidth: true, // Автоматическая ширина выпадающего списка
+        language: {
+            noResults: function() {
+                return "Карти не знайдені";
+            },
+            searching: function() {
+                return "Пошук...";
+            }
+        }
+    });
+
+    // Дополнительная настройка ширины после инициализации
+    $('.fuel-card-select').each(function() {
+        $(this).next('.select2-container').css('min-width', '220px');
+    });
+});
+
+
+// Обновленная функция submitFuelForm с поддержкой Select2
+function submitFuelForm() {
+    let formData = {};
+    let inputs = document.querySelectorAll("#fuel-form input, #fuel-form select:not(.fuel-card-select)");
+
+    // Обрабатываем обычные поля
+    inputs.forEach(input => {
+        if (input.value.trim() !== "" || input.type === "checkbox") {
+            formData[input.name] = input.value || (input.checked ? "on" : "off");
+        }
+    });
+
+    // Обрабатываем Select2 поля с картами OKKO
+    let fuelCardSelects = document.querySelectorAll(".fuel-card-select");
+    fuelCardSelects.forEach(select => {
+        let selectedValues = $(select).val(); // Используем jQuery для получения значений Select2
+        formData[select.name] = selectedValues || [];
+    });
+
+    // Добавляем анимацию перед сохранением
+    const saveButton = document.querySelector('button[onclick="submitFuelForm()"]');
+    saveButton.disabled = true;
+    saveButton.textContent = 'Збереження...';
+
+    // Анимация для всей формы
+    document.getElementById('fuel-form').classList.add('saving-animation');
+
+    fetch("/api/save_car_users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast("Дані успішно збережені!", "success");
+
+            // Анимация успешного сохранения
+            fuelCardSelects.forEach(select => {
+                $(select).next('.select2-container').effect('highlight', {color: '#d4edda'}, 800);
+            });
+        } else {
+            showToast("Помилка: " + data.error, "error");
+        }
+    })
+    .catch(() => {
+        showToast("Помилка при збереженні даних", "error");
+    })
+    .finally(() => {
+        // Восстанавливаем состояние кнопки и убираем анимацию
+        saveButton.disabled = false;
+        saveButton.textContent = 'Зберегти';
+        document.getElementById('fuel-form').classList.remove('saving-animation');
+    });
+}
+
+
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".delete-btn").forEach(button => {
+            button.addEventListener("click", function (event) {
+                event.preventDefault();
+
+                let userId = this.getAttribute("data-id");
+
+                fetch(`/api/remove_car/${userId}`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        let row = document.getElementById(`row-${userId}`);
+                        row.querySelector(".car-brand").value = "";
+                        row.querySelector(".km").value = 0;
+                        row.querySelector(".fuel-usage").value = 0;
+                        row.querySelector(".monthly-norm").value = 0;
+                        row.querySelector(".fuel-type").value = "Бензин";
+
+                        showToast("Дані успішно видалені!", "success");
+                    } else {
+                        showToast("Помилка: " + data.error, "error");
+                    }
+                })
+                .catch(() => {
+                    showToast("Помилка при видаленні даних", "error");
+                });
+            });
+        });
+    });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+
+{% include 'base/footer.html' %}

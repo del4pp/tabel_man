@@ -1,0 +1,808 @@
+{% include 'base/header.html' %}
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<!-- Bootstrap тільки для JS (модалки), CSS мінімізуємо -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="/static/css/calendar.css"> <!-- Твій CSS останнім -->
+
+<style type="text/css">
+#basic-datatable_filter {
+    display: none !important;
+}</style>
+
+<!-- Start Content-->
+<div id="custom-calendar"> <!-- Ізоляція стилів -->
+    <div class="row">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="header-title">Графік працівників</h4>
+                <p class="text-muted font-14"></p>
+                <!-- Dropdown для вибору місяця -->
+                <div class="row">
+                    <div class="col-6"></div>
+                    <div class="col-3">
+                        <input type="text" id="search-input" class="form-control" placeholder="Пошук...">
+                    </div>
+                    <div class="col-2">
+                        <select id="month-select" class="form-select" onchange="redirectToMonth()">
+                            <option value="1" {% if current_month == 1 %} selected {% endif %}>Січень</option>
+                            <option value="2" {% if current_month == 2 %} selected {% endif %}>Лютий</option>
+                            <option value="3" {% if current_month == 3 %} selected {% endif %}>Березень</option>
+                            <option value="4" {% if current_month == 4 %} selected {% endif %}>Квітень</option>
+                            <option value="5" {% if current_month == 5 %} selected {% endif %}>Травень</option>
+                            <option value="6" {% if current_month == 6 %} selected {% endif %}>Червень</option>
+                            <option value="7" {% if current_month == 7 %} selected {% endif %}>Липень</option>
+                            <option value="8" {% if current_month == 8 %} selected {% endif %}>Серпень</option>
+                            <option value="9" {% if current_month == 9 %} selected {% endif %}>Вересень</option>
+                            <option value="10" {% if current_month == 10 %} selected {% endif %}>Жовтень</option>
+                            <option value="11" {% if current_month == 11 %} selected {% endif %}>Листопад</option>
+                            <option value="12" {% if current_month == 12 %} selected {% endif %}>Грудень</option>
+                        </select>
+                    </div>
+                    <div class="col-1">
+                        <select id="year-select" class="form-select" onchange="redirectToYear()">
+                            {% for year in range(2024, 2034) %}
+                                <option value="{{ year }}" {% if current_year == year %} selected {% endif %}>{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="tab-content">
+                    <div class="tab-pane show active" id="basic-datatable-preview">
+                        <div class="table-responsive" id="table-responsive-container">
+                            <table id="basic-datatable" class="table dt-responsive nowrap w-100">
+                                <thead>
+                                    <tr>
+                                        <th class="sticky-head user_name_column" style="background-color: white;">Працівник</th>
+                                        <th class="sticky-head user_name_column" style="background-color: white;">Відділ</th>
+                                        {% for day in days_list %}
+                                            <th class="sticky-head" id="{{day.day_id}}" style="background-color: white;">{{day.day_info|safe}}</th>
+                                        {% endfor %}
+                                        <th class="sticky-head" style="background-color: white;">Присутність <br>на роботі<br>(днів)</th>
+                                        <th class="sticky-head" style="background-color: white;">Фонд РЧ</th>
+                                        <th class="sticky-head" style="background-color: white;">Факт РЧ</th>
+                                        <th class="sticky-head" style="background-color: white;color: #000;">Різниця</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set previous = {'departament': None} %}
+                                    {% set birthday_class = '' %}
+                                    {% for user in users_info %}
+                                        {% set special_class = '' %}
+                                        {% if previous.departament != user.user_departament %}
+                                            {% set special_class = 'new-department' %}
+                                        {% endif %}
+                                        {% set _ = previous.update({'departament': user.user_departament}) %}
+                                        {% set leader_change_class = '' %}
+                                        {% if previous.user_leader != user.user_leader %}
+                                            {% set leader_change_class = 'leader-change' %}
+                                        {% endif %}
+                                        {% set _ = previous.update({'user_leader': user.user_leader}) %}
+                                        <tr>
+                                            <td class="sticky-column user_name_column  {{ ' ' if special_class else leader_change_class }} {{ special_class }}" {% if user.user_dep_head %}style="background-color: #dcdcdc;"{% endif %}>{{ user.user_name }} <br></td>
+                                            <td class="sticky-column user_name_column  {{ ' ' if special_class else leader_change_class }} {{ special_class }}" {% if user.user_dep_head %}style="background-color: #dcdcdc;"{% endif %}>{{ user.user_departament }}<br></td>
+                                            {% for day in user.calendar %}
+                                                {% set birthday_class = '' %}
+                                                {% set user_birthday = user.birthday.split('-') %}
+                                                {% if user_birthday[1]|int == current_month and user_birthday[2]|int == day.date.day %}
+                                                    {% set birthday_class = 'birthday-cell' %}
+                                                {% endif %}
+                                                <td class="clickable-cell {{ birthday_class }} 
+                                                    {% if day.reason == 'work' %}{{ day.work_status }}{% endif %}
+                                                    {% if day.reason == 'dripicons-home' %}work-home{% elif day.reason == 'dripicons-time-reverse' %}vidprosivsja{% elif day.reason == 'dripicons-cross' %}dontknow{% elif day.reason == 'dripicons-store' %}sessia{% elif day.reason == 'dripicons-flag' %}vacation-day{% elif day.reason == 'dripicons-suitcase' %}comandirovka{% elif day.reason == 'dripicons-to-do' %}sesia{% elif day.reason == 'dripicons-medical' %}medical-day{% elif day.reason == 'dripicons-card' %}compensation{% elif day.reason == 'dripicons-media-loop' %}vidabopiz{% elif day.reason == 'dripicons-hourglass' %}mymoney{% elif day.reason == 'vacation' %}vacation{% elif day.reason == 'dripicons-return' %}vidgul{% elif day.reason == 'dripicons-tag-delete' %}remove{% elif day.reason == 'dripicons-crop' %}mobi{% elif day.reason == 'dripicons-pulse' %}meducalpulse{% elif day.work_time != '-' and day.work_fact != 0 and day.work_time != 0 and not day.difference and day.reason != 'dripicons-medical' %}work-day{% elif day.difference %}{% if day.difference > 0 %}positive-difference{% elif day.difference < 0 %}negative-difference{% endif %}{% elif day.weekend == 1 or day.work_time == 0 %}weekend{% endif %} {{ ' ' if special_class else leader_change_class }} {{ special_class }}" 
+                                                    data-date="{{ day.date }}" data-userid="{{day.user_id}}" title="{{day.comment}}" data-dayreason="{{day.reason}}"
+                                                    {% if day.reason != 'work' %} style="font-weight: 900;" {% endif %}>
+                                                    {{ day.work_time or '-' if day.work_time != 0 else '-' }}
+                                                    {% if day.difference %}<span class="top-right">{{ day.difference or '' }}</span>{% endif %}
+                                                    {% if day.reason %}<span class="bottom-icon"><i class="{{ day.reason }}"></i></span>{% endif %}
+                                                    {% if day.comment != 'Коментарів немає' %}<span class="bottom-icon-comment"><i class="dripicons-information"></i></span>{% endif %}
+                                                    {% if birthday_class %}<span class="top-icon-comment"><i class="mdi mdi-cupcake"></i></span>{% endif %}
+                                                </td>
+                                            {% endfor %}
+                                            <td class="clickable-cell  {{ ' ' if special_class else leader_change_class }} {{ special_class }}"><b>{{user.count_day_in_work}}</b></td>
+                                            <td class="clickable-cell  {{ ' ' if special_class else leader_change_class }} {{ special_class }}"><b>{{user.plan_work}}</b></td>
+                                            <td class="clickable-cell  {{ ' ' if special_class else leader_change_class }} {{ special_class }}"><b>{{user.fact_work}}</b></td>
+                                            <td class="clickable-cell  {{ ' ' if special_class else leader_change_class }} {{ special_class }} {% if user.diff_work > 0 %}positive-value{% elif user.diff_work < 0 %}negative-value{% else %}default-value{% endif %}" style="color:#000;">{{ user.diff_work }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>                                           
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="fake-scrollbar-container" style="position:fixed; bottom:0; left:0; width:100%; overflow-x:scroll;z-index: 9999;">
+    <div style="width:150%; height:1px;"></div>
+</div>
+
+<!-- Модальне вікно #cellModal -->
+<div class="modal fade" id="cellModal" tabindex="-1" role="dialog" aria-labelledby="cellModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cellModalLabel">Деталі</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="myForm">
+                    <div class="form-group">
+                        <label for="InputworkedHours">Відпрацьовано годин</label>
+                        <input type="number" class="form-control" id="InputworkedHours" name="workedHours" required readonly step="0.5">
+                        <input type="hidden" id="user_id_input" name="user_id" value="">
+                        <input type="hidden" id="date_input" name="date_input" value="">
+                        <input type="hidden" id="reason_realy" name="reason_realy" value="">
+                        <input type="hidden" id="this_month" name="this_month" value="{{current_month}}">
+                    </div>
+                    <div class="form-group">
+                        <label for="InputplannedHours">План годин</label>
+                        <input type="number" class="form-control" id="InputplannedHours" name="plannedHours" value="11" required step="0.5">
+                    </div>
+                    <div class="form-group form-check single-select">
+                        <input type="checkbox" class="form-check-input single-select" id="vidabopiz" name="vidabopiz">
+                        <label class="form-check-label" for="vidabopiz">Затримався або вийшов раніше</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="crossReason" name="crossReason">
+                        <label class="form-check-label" for="crossReason">Відпросився</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="additionalHoursCheck" name="additionalHoursCheck">
+                        <label class="form-check-label" for="additionalHoursCheck">Додатково вийшов</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="medicalReason" name="medicalReason">
+                        <label class="form-check-label" for="medicalReason">Хворіє</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="medicalReasonLikar" name="medicalReasonLikar">
+                        <label class="form-check-label" for="medicalReasonLikar">Хворіє з лікарняним</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="flagReason" name="flagReason">
+                        <label class="form-check-label" for="flagReason">Відгул</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="remoteWork" name="remoteWork">
+                        <label class="form-check-label" for="remoteWork">Віддалена робота</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="gamingReason" name="gamingReason">
+                        <label class="form-check-label" for="gamingReason">Нез'ясовані причини</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="suitcaseReason" name="suitcaseReason">
+                        <label class="form-check-label" for="suitcaseReason">Відрядження</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="todoReason" name="todoReason">
+                        <label class="form-check-label" for="todoReason">Навчання</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="compensationReason" name="compensationReason">
+                        <label class="form-check-label" for="compensationReason">Компенсація відпустки</label>
+                    </div>
+                    <div class="form-group form-check single-select" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input single-select" id="mymoneyReason" name="mymoneyReason">
+                        <label class="form-check-label" for="mymoneyReason">Відпустка за свій рахунок</label>
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;" id="fuelCommentFields">
+                        <label for="comment">Залишити коментар</label>
+                        <textarea class="form-control" rows="5" id="comment" name="comment"></textarea>
+                    </div>
+                    <div class="user_car_colum">
+                        <div class="form-group" style="margin-top: 15px;">
+                            <input type="checkbox" class="form-check-input" id="ownCar" name="ownCar">
+                            <label class="form-check-label" for="ownCar">Власне авто</label>
+                        </div>
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label for="fuelCompensationSwitch"></label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="fuelCompensationSwitch" name="fuelCompensationSwitch" onchange="toggleFuelFields()">
+                                <label class="form-check-label" for="fuelCompensationSwitch">Додаткова компенсація</label><br><br>
+                            </div>
+                        </div>
+                        <div id="fuelFields" style="display: none;">
+                            <div class="form-group">
+                                <label for="fuelLiters">Введіть витрачені літри</label>
+                                <input type="number" class="form-control" id="fuelLiters" name="fuelLiters" step="0.1"><br><br>
+                            </div>
+                            <div class="form-group">
+                                <label for="fuelComment">Коментар</label>
+                                <textarea class="form-control" id="fuelComment" name="fuelComment" rows="3"></textarea>
+                            </div><br><br>
+                        </div>
+                    </div>
+                    <br><br>
+                    <div id="comments-container" class="comment_list">
+                        <h5>Коментарі</h5>
+                    </div>
+                    <br><br>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary" id="saveButtonCalendar">Зберегти</button>
+                        <button type="button" class="btn btn-secondary" onclick="markAsNotWorking()">Вихідний</button>
+                        <button type="button" class="btn btn-warning" onclick="markAsWorking()">Працює</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальне вікно #transportModal із коментарями -->
+<div class="modal fade" id="transportModal" tabindex="-1" role="dialog" aria-labelledby="transportModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="transportModalLabel">Коли розвозив співробітників</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="transportForm">
+                    <input type="hidden" id="transport_user_id" name="user_id" value="">
+                    <input type="hidden" id="transport_date" name="date" value="">
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="dayShift" name="dayShift">
+                        <label class="form-check-label" for="dayShift">Ранок</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="dayComment">Коментар (Ранок)</label>
+                        <textarea class="form-control" rows="3" id="dayComment" name="dayComment"></textarea>
+                    </div>
+                    <div class="form-group form-check" style="margin-top: 15px;">
+                        <input type="checkbox" class="form-check-input" id="nightShift" name="nightShift">
+                        <label class="form-check-label" for="nightShift">Вечір</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="nightComment">Коментар (Вечір)</label>
+                        <textarea class="form-control" rows="3" id="nightComment" name="nightComment"></textarea>
+                    </div>
+                    <br>
+                    <button type="submit" class="btn btn-primary">Зберегти</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var userTransportIds = {{ user_transport | map(attribute='id') | list | tojson | safe }};
+var editableUserIds = {{ edit_list | tojson | safe }};
+
+const ownCarCheckbox = document.getElementById("ownCar");
+const reasonCheckboxes = [
+    "medicalReason", "medicalReasonLikar", "gamingReason", "flagReason", 
+    "mymoneyReason", "crossReason", "compensationReason", "remoteWork"
+].map(id => document.getElementById(id));
+
+// Зняття галочки "Власне авто", якщо ввімкнено одну з причин
+reasonCheckboxes.forEach(checkbox => {
+    if (checkbox) {
+        checkbox.addEventListener("change", () => {
+            if (checkbox.checked && ownCarCheckbox) {
+                ownCarCheckbox.checked = false;
+            }
+        });
+    }
+});
+
+// Логіка для свіч
+function toggleFuelFields() {
+    const fuelFields = document.getElementById("fuelFields");
+    if (fuelFields) {
+        fuelFields.style.display = fuelFields.style.display === "none" ? "block" : "none";
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var cells = document.querySelectorAll('.clickable-cell');
+    var currentDate = new Date();
+
+    {% if user_info.user_access != 1 %}
+        var minDate, maxDate;
+        currentDate.setDate(currentDate.getDate() - 4);
+        minDate = currentDate;
+        maxDate = new Date();
+        maxDate.setDate(maxDate.getDate());
+    {% else %}
+        var minDate = new Date(1999, 1, 1);
+        var maxDate = new Date(2222, 1, 1);
+    {% endif %}
+
+    cells.forEach(function(cell) {
+        cell.addEventListener('click', function() {
+            var userId = cell.dataset.userid;
+            var cellDate = new Date(cell.dataset.date);
+
+            console.log(cellDate, minDate, editableUserIds.includes(parseInt(userId)));
+
+            if (cellDate >= minDate && cellDate < maxDate && editableUserIds.includes(parseInt(userId))) {
+                var date = cell.dataset.date;
+                $.get('/api/get_calendar_info', { userId: userId, date: date }, function(response) {
+                    console.log(response);
+
+                    setTimeout(() => {
+                        var ownCarCheck = document.getElementById("ownCar");
+                        if (ownCarCheck) {
+                            ownCarCheck.checked = response.car;
+                            console.log("Стан ownCar після встановлення:", ownCarCheck.checked);
+
+                            var userCarColumn = document.querySelector('.user_car_colum');
+                            if (response.car && userCarColumn) {
+                                userCarColumn.style.display = 'block';
+                            } else if (userCarColumn) {
+                                userCarColumn.style.display = 'none';
+                            }
+                        } else {
+                            console.error("Чекбокс #ownCar не знайдено!");
+                        }
+                    }, 100); // Затримка 100 мс
+
+                    $('#user_id_input').val(userId);
+                    $('#date_input').val(date);
+                    $('#InputplannedHours').val(response.plan_work);
+                    $('#InputworkedHours').val(response.fact_work);
+
+                    var commentsContainer = $('.comment_list');
+                    commentsContainer.empty();
+
+                    var userCarColumn = document.querySelector('.user_car_colum');
+                    if (response.car && userCarColumn) {
+                        userCarColumn.style.display = 'block';
+                    } else if (userCarColumn) {
+                        userCarColumn.style.display = 'none';
+                    }
+
+                    if (response.abs_reason) {
+                        var reasonValue = response.abs_reason;
+                        $('.form-check-input').prop('checked', false);
+                        $('#' + reasonValue).prop('checked', true);
+                        $('#reason_realy').val(reasonValue);
+                    } else {
+                        $('.form-check-input').prop('checked', false);
+                        $('#reason_realy').val('');
+                    }
+
+                    if (response.comments && response.comments.length > 0) {
+                        response.comments.forEach(function(commentData) {
+                            var commentContainer = $('<div>').addClass('comment-container');
+                            var commentElement = $('<span>').text(commentData.dt_event + ' | ' + commentData.user_name + ' - ' + commentData.comment);
+                            var deleteIcon = $('<i>').addClass('mdi mdi-delete').attr('alt', 'Видалити').attr('data-commentid', commentData.id_comment);
+
+                            deleteIcon.on('click', function() {
+                                var commentIdToDelete = $(this).data('commentid');
+                                $.post('/delete-comment', { commentId: commentIdToDelete }, function(response) {
+                                    if (response.success) {
+                                        $(deleteIcon).parent().remove();
+                                    } else {
+                                        console.error('Помилка при видаленні коментаря.');
+                                    }
+                                }).fail(function() {
+                                    console.error('Помилка при відправленні запиту на видалення коментаря.');
+                                });
+                            });
+
+                            commentContainer.append(deleteIcon).append(commentElement);
+                            commentsContainer.append(commentContainer);
+                        });
+                    } else {
+                        commentsContainer.append($('<p>').text('Коментарі відсутні.'));
+                    }
+
+                    $('#cellModal').modal('show');
+                }).fail(function(error) {
+                    console.error(error);
+                });
+            } else {
+                alert("Ви не маєте права редагувати дані цього користувача, день ще не наступив.");
+            }
+        });
+
+        cell.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            var userId = parseInt(cell.dataset.userid);
+            var cellDate = new Date(cell.dataset.date);
+
+            if (cellDate >= minDate && cellDate < maxDate && editableUserIds.includes(userId) && userTransportIds.includes(userId)) {
+                var date = cell.dataset.date.split(' ')[0];
+                $('#transport_user_id').val(userId);
+                $('#transport_date').val(date);
+
+                $.get('/api/get_transport_info', { userId: userId, date: date }, function(response) {
+                    $('#dayShift').prop('checked', response.dayShift);
+                    $('#nightShift').prop('checked', response.nightShift);
+                    $('#dayComment').val(response.dayComment || '');
+                    $('#nightComment').val(response.nightComment || '');
+                    $('#transportModal').modal('show');
+                }).fail(function(error) {
+                    console.error('Помилка при отриманні даних розвезення:', error);
+                });
+            } else {
+                alert("Ви не маєте права редагувати дані цього користувача або день ще не настав.");
+            }
+        });
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    const titles = {
+        "dripicons-medical": "Хворіє",
+        "dripicons-pulse": "Хворіє з лікарняним",
+        "dripicons-jewel": "Додатково вийшов",
+        "dripicons-media-loop": "Затримався або вийшов раніше",
+        "dripicons-cross": "Нез'ясовані причини",
+        "dripicons-return": "Відгул",
+        "dripicons-gaming": "Отпуск рабочие дни",
+        "dripicons-suitcase": "Відрядження",
+        "dripicons-to-do": "Навчання",
+        "dripicons-time-reverse": "Відпросився",
+        "dripicons-hourglass": "Відпустка за свій рахунок",
+        "dripicons-card": "Компенсація відпустки",
+    };
+
+    document.querySelectorAll("i").forEach(function(icon) {
+        const classes = icon.classList;
+        for (const cls of classes) {
+            if (titles[cls]) {
+                icon.setAttribute("title", titles[cls]);
+                break;
+            }
+        }
+    });
+});
+
+$(document).ready(function() {
+    var currentMonth = new Date().getMonth() + 1;
+    var urlParams = new URLSearchParams(window.location.search);
+    var monthParam = parseInt(urlParams.get('month'));
+
+    if (monthParam === currentMonth) {
+        var targetElement = $('#{{ today }}');
+        var stickyColumnsWidth = $('.sticky-column').first().outerWidth() + $('.sticky-column').eq(1).outerWidth();
+
+        if (targetElement.length) {
+            var scrollContainer = $('.table-responsive');
+            var scrollPosition = targetElement.offset().left - scrollContainer.offset().left + scrollContainer.scrollLeft() - stickyColumnsWidth;
+
+            scrollContainer.animate({
+                scrollLeft: scrollPosition
+            }, 1000);
+        }
+    }
+});
+
+function redirectToMonth() {
+    var selectedMonth = document.getElementById('month-select').value;
+    var yearParam = new URLSearchParams(window.location.search).get('year');
+    var newSearch = '?month=' + selectedMonth;
+    if (yearParam) {
+        newSearch += '&year=' + yearParam;
+    }
+    window.location.search = newSearch;
+}
+
+function redirectToYear() {
+    var selectedYear = document.getElementById('year-select').value;
+    var monthParam = new URLSearchParams(window.location.search).get('month');
+    var newSearch = '?year=' + selectedYear;
+    if (monthParam) {
+        newSearch += '&month=' + monthParam;
+    }
+    window.location.search = newSearch;
+}
+
+function showNotification(message, type = 'success') {
+    var notification = $('<div>').addClass('custom-notification ' + type).text(message);
+    $('body').append(notification);
+    setTimeout(function() {
+        notification.fadeOut(500, function() {
+            $(this).remove();
+        });
+    }, 5000);
+}
+
+function markAsNotWorking() {
+    var userId = $('#user_id_input').val();
+    var date = $('#date_input').val();
+    var cell = $(`td[data-date='${date}'][data-userid='${userId}']`);
+
+    $.ajax({
+        url: '/api/mark-as-not-working',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ userId: userId, date: date }),
+        success: function(response) {
+            console.log('Відповідь сервера: ', response);
+            cell.html('-').removeClass('work-day').addClass('weekend');
+        },
+        error: function(xhr, status, error) {
+            console.error('Помилка відправки: ', error);
+        }
+    });
+    $("#cellModal").modal('hide');
+}
+
+function markAsWorking() {
+    var userId = $('#user_id_input').val();
+    var date = $('#date_input').val();
+    var liters = $('#fuelLiters').val();
+    var ownCar = $('#ownCar').is(':checked');
+    var extraComment = $('#fuelComment').val();
+
+    var cell = $(`td[data-date='${date}'][data-userid='${userId}']`);
+    cell.addClass('white-text');
+
+    $.ajax({
+        url: '/api/mark-as-working',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            userId: userId,
+            date: date,
+            liters: liters,
+            extraComment: extraComment,
+            ownCar: ownCar ? '1' : '0'
+        }),
+        success: function(response) {
+            console.log('Відповідь сервера: ', response);
+            $('#fuelLiters, #fuelComment, #user_id_input, #date_input').val('').removeClass('highlight');
+            $('#cellModal').modal('hide');
+            showNotification('✅ Дані успішно оновлено', 'success');
+        },
+        error: function(xhr, status, error) {
+            console.error('Помилка відправки: ', error);
+            showNotification('❌ Помилка: ' + xhr.responseJSON?.error || 'Невідома помилка', 'error');
+        }
+    });
+}
+
+$(document).ready(function() {
+    $("#cellModal .close").click(function() {
+        $("#cellModal").modal('hide');
+    });
+
+    $("#cellModal .btn-secondary").click(function() {
+        $("#cellModal").modal('hide');
+    });
+
+    $('#myForm').submit(function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        console.log(formData);
+        $.ajax({
+            type: 'POST',
+            url: 'calendar-event',
+            data: formData,
+            success: function(response) {
+                var cell = $(`td[data-date='${response.date}'][data-userid='${response.user_id}']`);
+                cell.removeClass().addClass("clickable-cell");
+                if (response.reason) {
+                    cell.addClass(response.work_status);
+                }
+                cell.attr('data-dayreason', response.reason);
+                cell.html(response.work_time || '-');
+                if (parseFloat(response.difference) > 0.0) {
+                    var differenceClass = "positive-difference";
+                    cell.append(`<span class="top-right ${differenceClass}">${response.difference}</span>`);
+                }
+                if (response.comment && response.comment !== "Коментарів немає") {
+                    cell.append('<span class="bottom-icon-comment"><i class="dripicons-information"></i></span>');
+                }
+                if (response.reason) {
+                    cell.append(`<span class="bottom-icon"><i class="${response.reason}"></i></span>`);
+                }
+                if (response.reason) {
+                    cell.css('background-color', response.color_code);
+                }
+                $('#myForm').find('input[type="number"], input[type="text"], textarea').val('');
+                $('#myForm').find('input[type="checkbox"], input[type="radio"]').prop('checked', false);
+                $('#myForm').find('select').val('');
+                $('#cellModal .form-check-input').prop('disabled', false);
+                if (response.color_status == 2) {
+                    cell.removeAttr('style').css('background-color', '#FFBA00');
+                }
+                $('#cellModal').modal('hide');
+                showNotification('Подію успішно збережено!', 'success');
+            },
+            error: function(xhr, status, error) {
+                console.error('Помилка відправки: ', error);
+                showNotification('Помилка при збереженні події!', 'error');
+            }
+        });
+    });
+});
+
+const checkboxes = document.querySelectorAll('input.form-check-input.single-select');
+checkboxes.forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+        checkboxes.forEach((otherCheckbox) => {
+            if (otherCheckbox !== checkbox) {
+                otherCheckbox.checked = false;
+            }
+        });
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    const singleSelectCheckboxes = document.querySelectorAll('input.form-check-input.single-select');
+    const workedHoursInput = document.getElementById("InputworkedHours");
+
+    singleSelectCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                singleSelectCheckboxes.forEach((otherCheckbox) => {
+                    if (otherCheckbox !== checkbox) {
+                        otherCheckbox.checked = false;
+                    }
+                });
+                workedHoursInput.readOnly = false;
+            } else {
+                let anyChecked = false;
+                singleSelectCheckboxes.forEach((cb) => {
+                    if (cb.checked) anyChecked = true;
+                });
+                workedHoursInput.readOnly = !anyChecked;
+            }
+        });
+    });
+});
+
+const titles = {
+    "dripicons-medical": "Хворіє",
+    "dripicons-pulse": "Хворіє з лікарняним",
+    "dripicons-jewel": "Додатково вийшов",
+    "dripicons-media-loop": "Затримався або вийшов раніше",
+    "dripicons-return": "Відгул",
+    "dripicons-gaming": "Нез'ясовані причини",
+    "dripicons-suitcase": "Відрядження",
+    "dripicons-time-reverse": "Відпросився",
+    "dripicons-to-do": "Навчання",
+    "dripicons-home": "Віддалена робота",
+    "dripicons-hourglass": "Відпустка за свій рахунок",
+    "dripicons-card": "Компенсація відпустки"
+};
+
+document.addEventListener("DOMContentLoaded", function() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const reasonRealyInput = document.getElementById("reason_realy");
+
+    checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", function() {
+            const checkboxLabel = document.querySelector(`label[for="${checkbox.id}"]`);
+            const labelText = checkboxLabel ? checkboxLabel.textContent : "";
+            if (this.checked && reasonRealyInput) {
+                reasonRealyInput.value = labelText;
+            } else if (reasonRealyInput) {
+                reasonRealyInput.value = Array.from(checkboxes).some(chk => chk.checked && document.querySelector(`label[for="${chk.id}"]`).textContent) ? reasonRealyInput.value : "";
+            }
+        });
+    });
+});
+
+document.getElementById('fake-scrollbar-container').onscroll = function() {
+    document.getElementById('table-responsive-container').scrollLeft = this.scrollLeft;
+};
+
+document.getElementById('table-responsive-container').onscroll = function() {
+    document.getElementById('fake-scrollbar-container').scrollLeft = this.scrollLeft;
+};
+
+$(document).ready(function() {
+    var searchInput = $('#basic-datatable_filter');
+    searchInput.hide();
+
+    let table = new DataTable('#basic-datatable', {
+        info: false,
+        ordering: false,
+        paging: false
+    });
+
+    function updateSecondColumnPosition() {
+        var firstColWidth = $('.sticky-column:first-child').outerWidth();
+        $('.sticky-column:nth-child(2)').css('left', (firstColWidth - 1) + 'px');
+    }
+
+    updateSecondColumnPosition();
+    table.on('draw', function() {
+        updateSecondColumnPosition();
+    });
+
+    $('#search-input').on('keyup', function() {
+        var searchText = $(this).val();
+        table.search(searchText).draw();
+    });
+});
+
+$(document).ready(function() {
+    $("#transportModal .close").click(function() {
+        $("#transportModal").modal('hide');
+    });
+
+    $('#transportForm').submit(function(e) {
+        e.preventDefault();
+        var userId = $('#transport_user_id').val();
+        var date = $('#transport_date').val();
+        var dayShift = $('#dayShift').is(':checked');
+        var nightShift = $('#nightShift').is(':checked');
+        var dayComment = $('#dayComment').val();
+        var nightComment = $('#nightComment').val();
+
+        $.ajax({
+            url: '/api/save_transport_info',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                userId: userId,
+                date: date,
+                dayShift: dayShift ? '1' : '0',
+                nightShift: nightShift ? '1' : '0',
+                dayComment: dayComment,
+                nightComment: nightComment
+            }),
+            success: function(response) {
+                console.log('Дані розвезення збережено:', response);
+                $('#transportModal').modal('hide');
+                showNotification('Дані розвезення успішно збережено!', 'success');
+                var cell = $(`td[data-date='${date}'][data-userid='${userId}']`);
+                if (dayShift || nightShift) {
+                    cell.append('<span class="transport-icon"><i class="mdi mdi-bus"></i></span>');
+                } else {
+                    cell.find('.transport-icon').remove();
+                }
+                $('#dayComment').val('');
+                $('#nightComment').val('');
+            },
+            error: function(xhr, status, error) {
+                console.error('Помилка при збереженні:', error);
+                showNotification('Помилка при збереженні!', 'error');
+            }
+        });
+    });
+});
+</script>
+<script type="text/javascript">
+var currentUserId = {{ user_info.id | tojson | safe }};
+console.log("Current User ID:", currentUserId);
+
+// Перевірка страховок одразу при завантаженні
+if ([11, 3, 84, 78].includes(currentUserId)) {
+    $.get('/api/check_insurance_expiry', function(response) {
+        if (response.html) {
+            // Затримка на 5 секунд перед відображенням модалі
+            setTimeout(function() {
+                // Видаляємо існуючу модаль, якщо вона є (про всяк випадок)
+                $('#insuranceWarningModal').remove();
+                // Додаємо отриманий HTML у body
+                $('body').append(response.html);
+                // Ініціалізуємо і показуємо модаль через нативний Bootstrap API
+                var modalElement = document.getElementById('insuranceWarningModal');
+                if (modalElement) {
+                    var modal = new bootstrap.Modal(modalElement, {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                    modal.show();
+                    // Обробник кнопки "Перейти до авто"
+                    $('.go-to-car').on('click', function() {
+                        var carId = $(this).data('car-id');
+                        window.location.href = `/company-car-${carId}`;
+                    });
+                } else {
+                    console.error('Модаль #insuranceWarningModal не знайдена в DOM після додавання');
+                }
+            }, 1000); // 5000 мс = 5 секунд
+        }
+    }).fail(function(error) {
+        console.error('Помилка при перевірці страховок:', error);
+    });
+}
+</script>
+{% include 'base/footer.html' %}

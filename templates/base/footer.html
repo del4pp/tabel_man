@@ -1,0 +1,110 @@
+<!-- Footer Start -->
+    <footer class="footer">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <script>document.write(new Date().getFullYear())</script> ©
+                </div>
+                <div class="col-md-6">
+                    <div class="text-md-end footer-links d-none d-md-block">
+                        <a href="javascript: void(0);">About</a>
+                        <a href="javascript: void(0);">Support</a>
+                        <a href="javascript: void(0);">Contact Us</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- end Footer -->
+
+</div>
+
+<!-- ============================================================== -->
+<!-- End Page content -->
+<!-- ============================================================== -->
+
+
+</div>
+<!-- END wrapper -->
+
+
+<!-- bundle -->
+<script src="static/assets/js/vendor.min.js"></script>
+<script src="static/assets/js/app.min.js"></script>
+
+
+
+<script>
+$(document).ready(function() {
+    // Обробник для кнопки закриття
+    $("#cellModal .close").click(function() {
+        $("#cellModal").modal('hide');
+    });
+
+    // Обробник для кнопки "Відмінити"
+    $("#cellModal .btn-secondary").click(function() {
+        $("#cellModal").modal('hide');
+    });
+});
+
+
+// Функція для показу спінера
+function showSpinner() {
+    document.querySelector('.loading-overlay').classList.add('active');
+}
+
+// Функція для приховування спінера
+function hideSpinner() {
+    document.querySelector('.loading-overlay').classList.remove('active');
+}
+
+// Показуємо спінер при початковому завантаженні
+showSpinner();
+
+// Приховуємо спінер, коли сторінка повністю завантажена
+window.addEventListener('load', function() {
+    hideSpinner();
+});
+
+// Показуємо спінер перед оновленням сторінки
+window.addEventListener('beforeunload', function() {
+    showSpinner();
+});
+
+// Виправляємо проблему з "вічним лоадером" при поверненні назад (bfcache)
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        hideSpinner();
+    }
+});
+</script>
+
+
+<script>
+    // Автоматичне визначення років та встановлення посилань
+    (function() {
+        const currentYear = new Date().getFullYear();
+        const prevYear = currentYear - 1;
+        const nextYear = currentYear + 1;
+
+        // Встановлюємо текст років
+        const prevYearEl = document.getElementById('prevYear');
+        const currentYearEl = document.getElementById('currentYear');
+        const nextYearEl = document.getElementById('nextYear');
+
+        if (prevYearEl) prevYearEl.textContent = prevYear;
+        if (currentYearEl) currentYearEl.textContent = currentYear;
+        if (nextYearEl) nextYearEl.textContent = nextYear;
+
+        // Встановлюємо посилання
+        const prevYearLink = document.getElementById('vacationConflictPrevYear');
+        const currentYearLink = document.getElementById('vacationConflictCurrentYear');
+        const nextYearLink = document.getElementById('vacationConflictNextYear');
+
+        if (prevYearLink) prevYearLink.href = 'vacation-conflicts/' + prevYear;
+        if (currentYearLink) currentYearLink.href = 'vacation-conflicts/' + currentYear;
+        if (nextYearLink) nextYearLink.href = 'vacation-conflicts/' + nextYear;
+    })();
+</script>
+    </body>
+</html>

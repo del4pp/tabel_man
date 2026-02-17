@@ -1,0 +1,198 @@
+{% include 'base/header.html' %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+
+<style type="text/css">
+.hidden-footer { display: none; }
+.hidden-column { display: none; }
+th { text-align: center; }
+th i { margin-left: 5px; cursor: pointer; color: #555; }
+th i:hover { color: #000; }
+tfoot td { background-color: #d3d3d3; font-weight: bold; }
+tbody td { text-align: center; }
+.custom-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px;
+    border-radius: 5px;
+    color: #fff;
+    z-index: 1000;
+}
+.custom-notification.success { background-color: #28a745; }
+.custom-notification.error { background-color: #dc3545; }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <h4 class="page-title">Звіт посилок Нової Пошти</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="page-title mb-3 text-center">Посилки Нової Пошти</h4>
+                    <div class="table-responsive">
+                        <table class="table" id="parcels-table">
+                            <thead>
+                                <tr>
+                                    <th>№</th>
+                                    <th>ТТН</th>
+                                    <th>Куди йде (відділення)</th>
+                                    <th>Від кого</th>
+                                    <th>Документ/посилка</th>
+                                    <th>Опис відправлення</th>
+                                    <th>Кількість місць</th>
+                                    <th>Коментар</th>
+                                    <th>Запланована дата доставки</th>
+                                    <th>Статус НП</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for parcel in parcels %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ parcel.tracking_number }}</td>
+                                    <td>{{ parcel.recipient_address | regex_replace('вул\\..*', '') | trim or '-' }}</td>
+                                    <td>{{ parcel.counterparty_sender or '-' }}</td>
+                                    <td>
+                                        {% if parcel.cargo_type == 'Parcel' %}
+                                            Посилка
+                                        {% elif parcel.cargo_type == 'Documents' %}
+                                            Документи
+                                        {% else %}
+                                            {{ parcel.cargo_type or '-' }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ parcel.cargo_description or '-' }}</td>
+                                    <td>{{ parcel.seats_amount or 1 }}</td>
+                                    <td>
+                                        <input type="text" class="form-control comment-input" 
+                                               data-tracking="{{ parcel.tracking_number }}" 
+                                               value="{{ parcel.comment or '' }}">
+                                    </td>
+                                    <td>{{ parcel.scheduled_delivery_date.strftime('%d.%m.%Y') if parcel.scheduled_delivery_date else '-' }}</td>
+                                    <td>{{ parcel.nova_poshta_status or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                                {% if not parcels %}
+                                <tr>
+                                    <td colspan="8" class="text-center">Немає даних для відображення</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                        <div class="d-flex mt-3">
+                            <button id="copy-arrived-btn" class="btn btn-primary me-2">Копіювати посилки у відділенні</button>
+                            <button id="save-comments-btn" class="btn btn-success">Зберегти</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const copyButton = document.getElementById("copy-arrived-btn");
+    const saveButton = document.getElementById("save-comments-btn");
+
+    // Приховати рядки, де адреса містить "м. Одеса"
+    document.querySelectorAll('#parcels-table tbody tr').forEach(row => {
+        const addressCell = row.querySelector('td:nth-child(3)'); // Колонка "Куди йде (відділення)"
+        if (addressCell && addressCell.textContent.includes('м. Одеса')) {
+            row.style.display = 'none';
+        }
+    });
+
+    // Копіювання ТТН
+    copyButton.addEventListener("click", async () => {
+        try {
+            const response = await fetch('/api/nova-poshta-parcels/copy-arrived', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                const trackingNumbers = data.tracking_numbers;
+                if (trackingNumbers) {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(trackingNumbers);
+                        showNotification("ТТН скопійовано в буфер обміну!", 'success');
+                    } else {
+                        const textArea = document.createElement("textarea");
+                        textArea.value = trackingNumbers;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        try {
+                            document.execCommand('copy');
+                            showNotification("ТТН скопійовано в буфер обміну (альтернативний метод)!", 'success');
+                        } catch (err) {
+                            showNotification("Помилка при копіюванні: " + err, 'error');
+                        }
+                        document.body.removeChild(textArea);
+                    }
+                } else {
+                    showNotification("Немає посилок зі статусом 'Прибув у відділення' або всі мають поштомати", 'error');
+                }
+            } else {
+                showNotification("Помилка: " + data.error, 'error');
+            }
+        } catch (error) {
+            showNotification("Помилка: " + error.message, 'error');
+        }
+    });
+
+    // Збереження коментарів
+    saveButton.addEventListener("click", async () => {
+        const comments = [];
+        document.querySelectorAll('.comment-input').forEach(input => {
+            const trackingNumber = input.getAttribute('data-tracking');
+            const comment = input.value.trim();
+            comments.push({
+                tracking_number: trackingNumber,
+                comment: comment
+            });
+        });
+
+        try {
+            const response = await fetch('/api/nova-poshta-parcels/save-comment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(comments)
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                showNotification("Коментарі успішно збережено!", 'success');
+            } else {
+                showNotification("Помилка: " + data.error, 'error');
+            }
+        } catch (error) {
+            showNotification("Помилка: " + error.message, 'error');
+        }
+    });
+
+    function showNotification(message, type = 'success') {
+        var notification = $('<div>')
+            .addClass('custom-notification ' + type)
+            .text(message);
+        $('body').append(notification);
+        setTimeout(function() {
+            notification.fadeOut(500, function() {
+                $(this).remove();
+            });
+        }, 5000);
+    }
+});
+</script>
+
+{% include 'base/footer.html' %}

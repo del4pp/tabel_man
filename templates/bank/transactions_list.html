@@ -1,0 +1,663 @@
+{% include 'base/header.html' %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+
+<style type="text/css">
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f5f7fa;
+}
+.container-fluid {
+    padding: 20px;
+}
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+}
+.page-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+.table {
+    margin-bottom: 0;
+    background-color: #ffffff;
+}
+.table th {
+    background-color: #e9ecef;
+    color: #495057;
+    font-weight: 500;
+    text-align: center;
+    padding: 12px;
+    border: none;
+}
+.table td {
+    padding: 12px;
+    vertical-align: middle;
+    text-align: center;
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+}
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+.table th:nth-child(1), .table td:nth-child(1) { width: 5%; }
+.table th:nth-child(2), .table td:nth-child(2) { width: 20%; }
+.table th:nth-child(3), .table td:nth-child(3) { width: 20%; }
+.table th:nth-child(4), .table td:nth-child(4) { width: 30%; }
+.table th:nth-child(5), .table td:nth-child(5) { width: 15%; font-weight: 700; }
+.table th:nth-child(6), .table td:nth-child(6) { width: 10%; }
+.table tfoot td {
+    font-weight: 700;
+    background-color: #e9ecef;
+    padding: 12px;
+    text-align: center;
+}
+.search-container {
+    margin-bottom: 20px;
+}
+.search-container .input-group {
+    display: flex;
+    gap: 10px;
+}
+.search-container .form-control {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 8px 12px;
+    font-size: 14px;
+    height: 38px;
+    transition: border-color 0.3s;
+}
+.search-container .form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+.search-container .input-group-text {
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 8px 0 0 8px;
+    padding: 8px;
+    color: #6c757d;
+}
+.search-container .date-range-wrapper {
+    position: relative;
+    flex: 1;
+}
+.search-container .date-range-wrapper .form-control {
+    padding-left: 36px;
+}
+.search-container .date-range-wrapper .input-group-text {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    height: 36px;
+    border-right: none;
+    z-index: 10;
+}
+.search-container .apply-period-btn {
+    border-radius: 8px;
+    font-size: 14px;
+    padding: 8px 16px;
+    height: 38px;
+}
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+}
+.pagination a, .pagination strong {
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+.pagination a {
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    color: #495057;
+}
+.pagination a:hover {
+    background-color: #e9ecef;
+}
+.pagination strong {
+    background-color: #007bff;
+    color: #ffffff;
+    border: 1px solid #007bff;
+}
+.popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    max-width: 90%;
+    width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+.popup-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    cursor: pointer;
+    font-size: 24px;
+    color: #6c757d;
+    transition: color 0.3s;
+}
+.popup-close:hover {
+    color: #343a40;
+}
+.popup h4 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+.popup .table {
+    font-size: 14px;
+}
+.popup .table td:first-child {
+    font-weight: 500;
+    color: #495057;
+    width: 40%;
+}
+.popup .table td:last-child {
+    color: #212529;
+}
+.popup .table td:last-child[bold] {
+    font-weight: 700;
+}
+.custom-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: #fff;
+    z-index: 1000;
+    font-size: 14px;
+}
+.custom-notification.success {
+    background-color: #28a745;
+}
+.custom-notification.error {
+    background-color: #dc3545;
+}
+.btn-info {
+    background-color: #17a2b8;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+.btn-info:hover {
+    background-color: #138496;
+}
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <h4 class="page-title">Звіт платежів</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="page-title mb-3 text-center">Платежі</h4>
+                    <div class="search-container">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" id="search-input" class="form-control" placeholder="Пошук...">
+                                    <div class="date-range-wrapper">
+                                        <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                                        <input type="text" id="date-range" class="form-control" placeholder="Виберіть період" readonly>
+                                    </div>
+                                    <button class="btn btn-primary apply-period-btn">Застосувати</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table" id="transactions-table">
+                            <thead>
+                                <tr>
+                                    <th>№</th>
+                                    <th>Дата операції</th>
+                                    <th>Відправник</th>
+                                    <th>Призначення</th>
+                                    <th>Сума</th>
+                                    <th>Дії</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-body">
+                                {% for transaction in transactions %}
+                                <tr>
+                                    <td>
+                                        {% if pagination %}
+                                            {{ loop.index + (pagination.page - 1) * pagination.per_page }}
+                                        {% else %}
+                                            {{ loop.index }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ transaction.operation_date or '-' }}</td>
+                                    <td>{{ transaction.receiver_correspondent or '-' }}</td>
+                                    <td>{{ transaction.payment_purpose or '-' }}</td>
+                                    <td>{{ "{:,.2f}".format(transaction.credit).replace(',', ' ') if transaction.credit else '0.00' }}</td>
+                                    <td>
+                                        <button class="btn btn-info btn-sm view-details" 
+                                                data-id="{{ transaction.id }}">
+                                            <i class="fa fa-eye"></i> Деталі
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% if not transactions %}
+                                <tr>
+                                    <td colspan="6" class="text-center">Немає даних для відображення</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" class="text-right">Загальна сума:</td>
+                                    <td id="total-credit">0.00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% if pagination %}
+                    <div class="pagination mt-3" id="pagination">
+                        {% if pagination.has_prev %}
+                            <a href="{{ url_for('transactions_list', page=pagination.prev_num, start_date=start_date, end_date=end_date) }}" class="btn btn-secondary me-2">Попередня</a>
+                        {% endif %}
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num == pagination.page %}
+                                    <strong class="btn btn-primary me-1">{{ page_num }}</strong>
+                                {% else %}
+                                    <a href="{{ url_for('transactions_list', page=page_num, start_date=start_date, end_date=end_date) }}" class="btn btn-outline-primary me-1">{{ page_num }}</a>
+                                {% endif %}
+                            {% else %}
+                                <span>...</span>
+                            {% endif %}
+                        {% endfor %}
+                        {% if pagination.has_next %}
+                            <a href="{{ url_for('transactions_list', page=pagination.next_num, start_date=start_date, end_date=end_date) }}" class="btn btn-secondary ms-2">Наступна</a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popup-overlay"></div>
+<div class="popup" id="transaction-details">
+    <span class="popup-close">×</span>
+    <h4>Деталі платежу</h4>
+    <table class="table table-bordered">
+        <tbody id="details-content">
+        </tbody>
+    </table>
+</div>
+
+<script>
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    const searchInput = document.getElementById("search-input");
+    const dateRangeInput = document.getElementById("date-range");
+    const tableBody = document.getElementById("transactions-body");
+    const totalCredit = document.getElementById("total-credit");
+    const paginationDiv = document.getElementById("pagination");
+    const popup = document.getElementById("transaction-details");
+    const popupOverlay = document.querySelector(".popup-overlay");
+    const popupClose = document.querySelector(".popup-close");
+    const detailsContent = document.getElementById("details-content");
+    const applyPeriodBtn = document.querySelector(".apply-period-btn");
+
+    const initialTableHTML = tableBody.innerHTML;
+
+    flatpickr("#date-range", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        locale: {
+            firstDayOfWeek: 1
+        },
+        disableMobile: true,
+        allowInput: false,
+        onOpen: function() {
+            this.jumpToDate(new Date());
+        }
+    });
+
+    function updateTotal() {
+        let sum = 0;
+        tableBody.querySelectorAll("tr").forEach(row => {
+            const creditText = row.cells[4]?.textContent.trim().replace(/\s/g, "").replace(",", ".");
+            const value = parseFloat(creditText);
+            if (!isNaN(value)) {
+                sum += value;
+            }
+        });
+        totalCredit.textContent = sum.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ");
+    }
+
+    function renderTransactions(transactions, page = 1, perPage = 20, hasPagination = false) {
+        tableBody.innerHTML = '';
+        if (transactions.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Немає даних для відображення</td></tr>';
+            updateTotal();
+            return;
+        }
+        transactions.forEach((transaction, index) => {
+            const row = `
+                <tr>
+                    <td>${hasPagination ? (index + 1 + (page - 1) * perPage) : (index + 1)}</td>
+                    <td>${transaction.operation_date || '-'}</td>
+                    <td>${transaction.receiver_correspondent || '-'}</td>
+                    <td>${transaction.payment_purpose || '-'}</td>
+                    <td>${transaction.credit ? Number(transaction.credit).toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ') : '0.00'}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm view-details" 
+                                data-id="${transaction.id}">
+                            <i class="fa fa-eye"></i> Деталі
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+        updateTotal();
+    }
+
+    function restoreInitialState() {
+        tableBody.innerHTML = initialTableHTML;
+        if (paginationDiv) {
+            paginationDiv.style.display = 'flex';
+        }
+        updateTotal();
+    }
+
+    async function fetchTransactions(startDate = '', endDate = '', page = 1, perPage = 20) {
+        try {
+            const params = new URLSearchParams();
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            if (!startDate && !endDate) {
+                params.append('page', page);
+                params.append('per_page', perPage);
+                params.append('user_id', {{ user_info.user_id }});
+            }
+
+            const response = await fetch(`/api/bank-transactions?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+            showNotification('Помилка отримання транзакцій: ' + error.message, 'error');
+            throw error;
+        }
+    }
+
+    async function fetchTransactionDetails(id) {
+        try {
+            const response = await fetch(`/api/bank-transactions/${id}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const transaction = await response.json();
+            return transaction;
+        } catch (error) {
+            console.error('Error fetching transaction details:', error);
+            showNotification('Помилка отримання деталей: ' + error.message, 'error');
+            throw error;
+        }
+    }
+
+    function renderTransactionDetails(transaction) {
+        detailsContent.innerHTML = `
+            <tr><td><strong>ID</strong></td><td>${transaction.id || '-'}</td></tr>
+            <tr><td><strong>ЄДРПОУ відправника</strong></td><td>${transaction.edrpou_sender || '-'}</td></tr>
+            <tr><td><strong>Код НБУ відправника</strong></td><td>${transaction.sender_nbu_code || '-'}</td></tr>
+            <tr><td><strong>Рахунок відправника</strong></td><td>${transaction.sender_account || '-'}</td></tr>
+            <tr><td><strong>Валюта</strong></td><td>${transaction.currency || '-'}</td></tr>
+            <tr><td><strong>Дата операції</strong></td><td>${transaction.operation_date || '-'}</td></tr>
+            <tr><td><strong>Код операції</strong></td><td>${transaction.operation_code || '-'}</td></tr>
+            <tr><td><strong>Код НБУ отримувача</strong></td><td>${transaction.receiver_nbu_code || '-'}</td></tr>
+            <tr><td><strong>Ім'я отримувача</strong></td><td>${transaction.receiver_name || '-'}</td></tr>
+            <tr><td><strong>Рахунок отримувача</strong></td><td>${transaction.receiver_account || '-'}</td></tr>
+            <tr><td><strong>ЄДРПОУ отримувача</strong></td><td>${transaction.receiver_edrpou || '-'}</td></tr>
+            <tr><td><strong>Отримувач</strong></td><td>${transaction.receiver_correspondent || '-'}</td></tr>
+            <tr><td><strong>Номер документа</strong></td><td>${transaction.document_number || '-'}</td></tr>
+            <tr><td><strong>Дата документа</strong></td><td>${transaction.document_date || '-'}</td></tr>
+            <tr><td><strong>Дебет</strong></td><td>${transaction.debit ? transaction.debit.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ') : '0.00'}</td></tr>
+            <tr><td><strong>Кредит</strong></td><td bold>${transaction.credit ? transaction.credit.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ') : '0.00'}</td></tr>
+            <tr><td><strong>Призначення</strong></td><td>${transaction.payment_purpose || '-'}</td></tr>
+            <tr><td><strong>Покриття в UAH</strong></td><td>${transaction.uah_coverage ? transaction.uah_coverage.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1 ') : '0.00'}</td></tr>
+        `;
+        popup.style.display = "block";
+        popupOverlay.style.display = "block";
+    }
+
+    function updatePagination(paginationData, startDate, endDate) {
+        if (!paginationData || !paginationDiv) {
+            paginationDiv.innerHTML = '';
+            paginationDiv.style.display = 'none';
+            return;
+        }
+        paginationDiv.innerHTML = '';
+        paginationDiv.style.display = 'flex';
+        if (paginationData.has_prev) {
+            const url = `/bank-transactions?page=${paginationData.prev_num}` + 
+                       (startDate ? `&start_date=${startDate}` : '') + 
+                       (endDate ? `&end_date=${endDate}` : '');
+            paginationDiv.innerHTML += `<a href="${url}" class="btn btn-secondary me-2">Попередня</a>`;
+        }
+        paginationData.pages.forEach(pageNum => {
+            if (pageNum) {
+                const url = `/bank-transactions?page=${pageNum}` + 
+                           (startDate ? `&start_date=${startDate}` : '') + 
+                           (endDate ? `&end_date=${endDate}` : '');
+                if (pageNum === paginationData.page) {
+                    paginationDiv.innerHTML += `<strong class="btn btn-primary me-1">${pageNum}</strong>`;
+                } else {
+                    paginationDiv.innerHTML += `<a href="${url}" class="btn btn-outline-primary me-1">${pageNum}</a>`;
+                }
+            } else {
+                paginationDiv.innerHTML += `<span>...</span>`;
+            }
+        });
+        if (paginationData.has_next) {
+            const url = `/bank-transactions?page=${paginationData.next_num}` + 
+                       (startDate ? `&start_date=${startDate}` : '') + 
+                       (endDate ? `&end_date=${endDate}` : '');
+            paginationDiv.innerHTML += `<a href="${url}" class="btn btn-secondary ms-2">Наступна</a>`;
+        }
+    }
+
+    async function fetchAndRenderTransactions(page = 1) {
+        const dateRange = dateRangeInput.value;
+        let startDate = '';
+        let endDate = '';
+        if (dateRange) {
+            if (dateRange.includes(' to ')) {
+                [startDate, endDate] = dateRange.split(' to ');
+            } else {
+                startDate = dateRange;
+                endDate = dateRange;
+            }
+        }
+
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            showNotification('Дата "від" не може бути пізніше за дату "до"', 'error');
+            return;
+        }
+
+        try {
+            const data = await fetchTransactions(startDate, endDate, page);
+            renderTransactions(
+                data.transactions,
+                data.pagination ? data.pagination.page : 1,
+                data.pagination ? data.pagination.per_page : 20,
+                !!data.pagination
+            );
+            updatePagination(data.pagination, startDate, endDate);
+        } catch (error) {
+            console.error('Error in fetchAndRenderTransactions:', error);
+        }
+    }
+
+    const performSearch = debounce(async (query) => {
+        const dateRange = dateRangeInput.value;
+        let startDate = '';
+        let endDate = '';
+        if (dateRange) {
+            if (dateRange.includes(' to ')) {
+                [startDate, endDate] = dateRange.split(' to ');
+            } else {
+                startDate = dateRange;
+                endDate = dateRange;
+            }
+        }
+
+        if (query.length < 3 && !startDate && !endDate) {
+            restoreInitialState();
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams();
+            params.append('query', query);
+            if (startDate) params.append('start_date', startDate);
+            if (endDate) params.append('end_date', endDate);
+            params.append('user_id', {{ user_info.user_id }})
+
+            const response = await fetch(`/api/bank-transactions/search?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            const data = await response.json();
+            renderTransactions(data.transactions, 1, 20, false);
+            updatePagination(null);
+            if (data.transactions.length === 0) {
+                showNotification('Нічого не знайдено', 'error');
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            showNotification('Помилка пошуку: ' + error.message, 'error');
+        }
+    }, 300);
+
+    applyPeriodBtn.addEventListener("click", () => {
+        fetchAndRenderTransactions();
+    });
+
+    tableBody.addEventListener('click', async (event) => {
+        const button = event.target.closest('.view-details');
+        if (button) {
+            const id = button.getAttribute('data-id');
+            try {
+                const transaction = await fetchTransactionDetails(id);
+                renderTransactionDetails(transaction);
+            } catch (error) {
+                console.error('Error in tableBody click:', error);
+            }
+        }
+    });
+
+    searchInput.addEventListener("input", (e) => {
+        performSearch(e.target.value);
+    });
+
+    popupClose.addEventListener("click", () => {
+        popup.style.display = "none";
+        popupOverlay.style.display = "none";
+    });
+
+    popupOverlay.addEventListener("click", () => {
+        popup.style.display = "none";
+        popupOverlay.style.display = "none";
+    });
+
+    function showNotification(message, type = 'success') {
+        const notification = $('<div>')
+            .addClass('custom-notification ' + type)
+            .text(message);
+        $('body').append(notification);
+        setTimeout(() => {
+            notification.fadeOut(500, () => {
+                notification.remove();
+            });
+        }, 5000);
+    }
+
+    // Обчислення загальної суми при завантаженні сторінки
+    updateTotal();
+});
+</script>
+
+{% include 'base/footer.html' %}

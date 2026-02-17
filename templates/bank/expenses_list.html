@@ -1,0 +1,155 @@
+{% include 'base/header.html' %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+
+<style>
+body { font-family: 'Roboto', sans-serif; background-color: #f5f7fa; }
+.container-fluid { padding: 20px; }
+.card { border: none; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); background-color: #fff; }
+.page-title { color: #2c3e50; font-weight: 600; margin-bottom: 20px; }
+.table-responsive { border-radius: 8px; overflow: hidden; }
+.table { margin-bottom: 0; background-color: #fff; width: 100%; }
+.table th { background-color: #e9ecef; color: #495057; font-weight: 500; text-align: center; padding: 12px; border: none; }
+.table td { padding: 12px; vertical-align: middle; text-align: center; border: none; border-bottom: 1px solid #e9ecef; }
+.table tbody tr:hover { background-color: #f8f9fa; }
+.table th:nth-child(1), .table td:nth-child(1) { width: 5%; }
+.table th:nth-child(2), .table td:nth-child(2) { width: 20%; }
+.table th:nth-child(3), .table td:nth-child(3) { width: 35%; }
+.table th:nth-child(4), .table td:nth-child(4) { width: 10%; font-weight: 700; }
+.table td:nth-child(5) { display: flex; justify-content: center; align-items: center; }
+.table tfoot td { font-weight: 700; background-color: #e9ecef; padding: 12px; text-align: center; }
+.search-container { margin-bottom: 20px; }
+.search-container .input-group { display: flex; gap: 10px; }
+.search-container .form-control { border-radius: 8px; border: 1px solid #ced4da; padding: 8px 12px; font-size: 14px; height: 38px; transition: border-color 0.3s; }
+.search-container .form-control:focus { border-color: #007bff; box-shadow: 0 0 5px rgba(0,123,255,0.3); }
+.search-container .input-group-text { background-color: #f8f9fa; border: 1px solid #ced4da; border-radius: 8px 0 0 8px; padding: 8px; color: #6c757d; }
+.search-container .date-range-wrapper { position: relative; flex: 1; }
+.search-container .date-range-wrapper .form-control { padding-left: 36px; }
+.search-container .date-range-wrapper .input-group-text { position: absolute; left: 1px; top: 1px; height: 36px; border-right: none; z-index: 10; }
+.search-container .apply-period-btn { border-radius: 8px; font-size: 14px; padding: 8px 16px; height: 38px; }
+.pagination { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+.pagination a, .pagination strong { padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; transition: background-color 0.3s; }
+.pagination a { background-color: #fff; border: 1px solid #ced4da; color: #495057; }
+.pagination a:hover { background-color: #e9ecef; }
+.pagination strong { background-color: #007bff; color: #fff; border: 1px solid #007bff; }
+.popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 1000; max-width: 90%; width: 600px; max-height: 80vh; overflow-y: auto; }
+.popup-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height:100%; background: rgba(0,0,0,0.5); z-index:999; }
+.popup-close { position: absolute; top:10px; right:15px; cursor:pointer; font-size:24px; color:#6c757d; transition:color 0.3s; }
+.popup-close:hover { color:#343a40; }
+.popup h4 { color:#2c3e50; font-weight:600; margin-bottom:20px; }
+.popup .table { font-size:14px; }
+.popup .table td:first-child { font-weight:500; color:#495057; width:40%; }
+.popup .table td:last-child { color:#212529; }
+.popup .table td:last-child[bold] { font-weight:700; }
+.custom-notification { position: fixed; top:20px; right:20px; padding:12px 20px; border-radius:8px; color:#fff; z-index:1000; font-size:14px; }
+.custom-notification.success { background-color:#28a745; }
+.custom-notification.error { background-color:#dc3545; }
+.btn-info { background-color:#17a2b8; border:none; border-radius:8px; padding:6px; font-size:14px; display:flex; flex-direction:column; align-items:center; width:138px;height:33px; }
+.btn-info i { font-size:18px; margin-bottom:4px; }
+</style>
+
+<div class="container-fluid">
+  <h4 class="page-title text-center mb-3">Розходи</h4>
+  <div class="search-container mb-3">
+    <div class="input-group">
+      <span class="input-group-text"><i class="fas fa-search"></i></span>
+      <input type="text" id="search-input" class="form-control" placeholder="Пошук...">
+      <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+      <input type="text" id="date-range" class="form-control" placeholder="Виберіть період" readonly>
+      <button class="btn btn-primary apply-period-btn">Застосувати</button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table" id="transactions-table">
+      <thead>
+        <tr>
+          <th>№</th><th>Дата операції</th><th>Отримувач</th><th>Розхід</th><th>Дії</th>
+        </tr>
+      </thead>
+      <tbody id="transactions-body">
+        <!-- JS inserts rows -->
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="text-right">Загальна сума:</td>
+          <td id="total-debit">0.00</td><td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+
+<div class="popup-overlay"></div>
+<div class="popup" id="transaction-details">
+  <span class="popup-close">×</span>
+  <h4>Деталі розходу</h4>
+  <table class="table table-bordered">
+    <tbody id="details-content"></tbody>
+  </table>
+</div>
+
+<script>
+function debounce(fn, delay) { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), delay); } }
+function formatNum(n){ return n.toFixed(2).replace(/\d(?=(\d{3})+\.)/g,'$& ').replace('.', ','); }
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  flatpickr('#date-range',{mode:'range',dateFormat:'Y-m-d',locale:{firstDayOfWeek:1},disableMobile:true});
+  const body=document.getElementById('transactions-body');
+  const total=document.getElementById('total-debit');
+  const overlay=document.querySelector('.popup-overlay');
+  const popup=document.getElementById('transaction-details');
+  const closeBtn=document.querySelector('.popup-close');
+  const details=document.getElementById('details-content');
+
+  function updateTotal(){ let s=0; body.querySelectorAll('tr').forEach(r=>{ const t=r.cells[3]?.textContent.trim().replace(/\s/g,'').replace(',','.'); const v=parseFloat(t); if(!isNaN(v)) s+=v; }); total.textContent=formatNum(s); }
+
+  function render(rows){ body.innerHTML=''; if(!rows.length){ body.innerHTML='<tr><td colspan="5" class="text-center">Немає даних</td></tr>'; return updateTotal(); }
+    rows.forEach((t,i)=>{ body.insertAdjacentHTML('beforeend',`
+      <tr>
+        <td>${i+1}</td>
+        <td>${t.operation_date||'-'}</td>
+        <td>${t.receiver_correspondent||'-'}</td>
+        <td>${t.debit?formatNum(+t.debit):'0.00'}</td>
+        <td><button class="btn btn-info btn-sm view-details" data-id="${t.id}">
+              Деталі
+            </button></td>
+      </tr>`); }); updateTotal(); }
+
+  async function fetchJSON(u){ const r=await fetch(u); if(!r.ok) throw Error(r.statusText); return r.json(); }
+
+  async function load(s='',e=''){ try{ let p=new URLSearchParams(); if(s) p.append('start_date',s); if(e) p.append('end_date',e); const d=await fetchJSON(`/api/bank-expenses?${p}`); render(d.transactions); }catch{alert('Помилка');} }
+  const search=debounce(q=>{ loadTransactions(q); },300);
+  body.addEventListener('click',async e=>{ if(!e.target.closest('.view-details')) return; const id=e.target.closest('.view-details').dataset.id; try{ const t=await fetchJSON(`/api/bank-expenses/${id}`); details.innerHTML=`
+      <tr><td><strong>ID</strong></td><td>${t.id||'-'}</td></tr>
+      <tr><td><strong>ЄДРПОУ відпр.</strong></td><td>${t.edrpou_sender||'-'}</td></tr>
+      <tr><td><strong>Код НБУ відпр.</strong></td><td>${t.sender_nbu_code||'-'}</td></tr>
+      <tr><td><strong>Рах. відпр.</strong></td><td>${t.sender_account||'-'}</td></tr>
+      <tr><td><strong>Валюта</strong></td><td>${t.currency||'-'}</td></tr>
+      <tr><td><strong>Дата оп.</strong></td><td>${t.operation_date||'-'}</td></tr>
+      <tr><td><strong>Код оп.</strong></td><td>${t.operation_code||'-'}</td></tr>
+      <tr><td><strong>Код НБУ отр.</strong></td><td>${t.receiver_nbu_code||'-'}</td></tr>
+      <tr><td><strong>Ім'я отр.</strong></td><td>${t.receiver_name||'-'}</td></tr>
+      <tr><td><strong>Рах. отр.</strong></td><td>${t.receiver_account||'-'}</td></tr>
+      <tr><td><strong>ЄДРПОУ отр.</strong></td><td>${t.receiver_edrpou||'-'}</td></tr>
+      <tr><td><strong>Отримувач</strong></td><td>${t.receiver_correspondent||'-'}</td></tr>
+      <tr><td><strong>Документ №</strong></td><td>${t.document_number||'-'}</td></tr>
+      <tr><td><strong>Дата док.</strong></td><td>${t.document_date||'-'}</td></tr>
+      <tr><td><strong>Дебет</strong></td><td>${t.debit?formatNum(+t.debit):'0.00'}</td></tr>
+      <tr><td><strong>Кредит</strong></td><td>${t.credit?formatNum(+t.credit):'0.00'}</td></tr>
+      <tr><td><strong>Покриття UAH</strong></td><td>${t.uah_coverage?formatNum(+t.uah_coverage):'0.00'}</td></tr>
+    `; popup.style.display='block'; overlay.style.display='block'; }catch{} });
+  closeBtn.addEventListener('click',()=>{ popup.style.display='none'; overlay.style.display='none'; });
+  overlay.addEventListener('click',()=>{ popup.style.display='none'; overlay.style.display='none'; });
+  document.querySelector('.apply-period-btn').addEventListener('click',()=>{ const [s,e]=document.getElementById('date-range').value.split(' to '); load(s||'',e||s||''); });
+  document.getElementById('search-input').addEventListener('input',e=>{ const q=e.target.value.trim(); if(q.length<3) load(); else search(q); });
+  load();
+});
+</script>
+
+{% include 'base/footer.html' %}

@@ -1,0 +1,226 @@
+{% include 'base/header.html' %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+<style>
+    /* Стилі для таблиці */
+    .transport-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        text-align: center;
+    }
+    .transport-table th, .transport-table td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        position: relative;
+    }
+    .transport-table th {
+        background-color: #343a40;
+        color: white;
+    }
+    .transport-table td {
+        background-color: #fff;
+    }
+    .transport-table .weekend {
+        background-color: #f5f5f5;
+    }
+    .transport-table th.weekend {
+        background-color: #d3d3d3;
+    }
+    .transport-table tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+    .transport-table tfoot td {
+        font-weight: bold;
+        background-color: #e9ecef;
+    }
+
+    /* Фіксована ширина колонок для дат */
+    .transport-table th.date-column,
+    .transport-table td.date-column {
+        width: 38px;
+        height: 38px;
+        padding: 0; /* Зменшуємо внутрішні відступи */
+        line-height: 38px; /* Центруємо вміст по вертикалі */
+    }
+
+    /* Стиль для кнопки "Скачати PDF" */
+    .download-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        font-size: 14px;
+        white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .download-btn:hover {
+        background-color: #218838;
+        color: white;
+    }
+
+    /* Стиль для селектів */
+    .form-select {
+        min-width: 120px;
+    }
+
+    /* Стиль для іконки коментарів */
+    .comment-icon {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        font-size: 12px;
+        color: #007bff;
+        cursor: pointer;
+    }
+
+    /* Стиль для спливаючого вікна */
+    .comment-tooltip {
+        display: none;
+        position: absolute;
+        bottom: 40px; /* Збільшено, щоб не перекривати клітинку */
+        right: 0;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        padding: 5px;
+        font-size: 12px;
+        max-width: 200px;
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        white-space: nowrap;
+    }
+    .comment-icon:hover + .comment-tooltip {
+        display: block;
+    }
+</style>
+
+<div class="container-fluid">
+   <div class="row">
+      <div class="col-12">
+         <div class="page-title-box">
+            <div class="page-title-right">
+               <ol class="breadcrumb m-0">
+                  <li class="breadcrumb-item"><a href="javascript: void(0);">Scania</a></li>
+                  <li class="breadcrumb-item"><a href="javascript: void(0);">Звіти</a></li>
+                  <li class="breadcrumb-item active">Розвезення</li>
+               </ol>
+               <div class="d-inline-flex align-items-center">
+                  <select class="form-select me-2" id="month-select">
+                     {% for i in range(12) %}
+                     <option value="{{ i + 1 }}" {% if i + 1 == month %}selected{% endif %}>{{ month_names_uk[i] }}</option>
+                     {% endfor %}
+                  </select>
+                  <select class="form-select me-2" id="year-select">
+                     {% for y in years %}
+                     <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                     {% endfor %}
+                  </select>
+                  <a href="/transport-report/{{ month }}/{{ year }}" class="btn download-btn" target="_blank" id="download-pdf-btn">
+                     <i class="fas fa-download"></i> Скачати PDF
+                  </a>
+               </div>
+            </div>
+            <h4 class="page-title">Звіт розвозок</h4>
+         </div>
+      </div>
+   </div>
+
+   <div class="row">
+      <div class="col-12">
+         <div class="card">
+            <div class="card-body">
+               <div class="table-responsive">
+                  <table class="transport-table">
+                     <thead>
+                        <tr>
+                           <th style="width: 30px;">П/П</th>
+                           <th style="width: 150px;">ПІБ працівника</th>
+                           {% for day in range(1, days_in_month + 1) %}
+                           <th class="date-column {% if day in weekends %}weekend{% endif %}">{{ day }}</th>
+                           {% endfor %}
+                           <th style="width: 50px;">Всього</th>
+                           <th style="width: 50px;">Сума, грн</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {% for idx, entry in transport_data %}
+                        <tr>
+                           <td>{{ idx }}</td>
+                           <td>{{ entry.full_name }}</td>
+                           {% for day in range(1, days_in_month + 1) %}
+                           <td class="date-column {% if day in weekends %}weekend{% endif %}">
+                              {{ entry.daily_counts.get(day, '') or '' }}
+                              {% if entry.daily_comments.get(day) %}
+                              <i class="fas fa-comment comment-icon"></i>
+                              <div class="comment-tooltip">
+                                 {% for comment in entry.daily_comments.get(day) %}
+                                 {{ comment }}<br>
+                                 {% endfor %}
+                              </div>
+                              {% endif %}
+                           </td>
+                           {% endfor %}
+                           <td>{{ entry.total_count }}</td>
+                           <td>{{ (entry.total_count * price_for_day) | format_thousands}}</td>
+                        </tr>
+                        {% endfor %}
+                     </tbody>
+                     <tfoot>
+                        <tr>
+                           <td colspan="2">Загальна сума</td>
+                           <td colspan="{{ days_in_month }}"></td>
+                           <td id="total-count">0</td>
+                           <td id="total-sum">0.00</td>
+                        </tr>
+                     </tfoot>
+                  </table>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+</div>
+
+{% include 'base/footer.html' %}
+
+<script>
+   function updateReport() {
+       const month = document.getElementById('month-select').value;
+       const year = document.getElementById('year-select').value;
+       window.location.href = `/transport-report-view?month=${month}&year=${year}`;
+       document.getElementById('download-pdf-btn').href = `/transport-report/${month}/${year}`;
+   }
+
+   document.addEventListener('DOMContentLoaded', function() {
+       const month = document.getElementById('month-select').value;
+       const year = document.getElementById('year-select').value;
+       document.getElementById('download-pdf-btn').href = `/transport-report/${month}/${year}`;
+   });
+
+   document.getElementById('month-select').addEventListener('change', updateReport);
+   document.getElementById('year-select').addEventListener('change', updateReport);
+
+   function calculateTotals() {
+       let totalCount = 0;
+       let totalSum = 0;
+
+       const rows = document.querySelectorAll('.transport-table tbody tr');
+       rows.forEach(row => {
+           const countCell = row.cells[row.cells.length - 2];
+           const sumCell = row.cells[row.cells.length - 1];
+           const count = parseInt(countCell.textContent) || 0;
+           const sum = parseInt(sumCell.textContent.replace(/\s/g, '')) || 0;
+
+           totalCount += count;
+           totalSum += sum;
+       });
+
+       document.getElementById('total-count').textContent = totalCount;
+       document.getElementById('total-sum').textContent = totalSum.toLocaleString('uk-UA');
+   }
+
+   document.addEventListener('DOMContentLoaded', calculateTotals);
+</script>

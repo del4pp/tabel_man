@@ -1,0 +1,871 @@
+{% include 'base/header.html' %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style type="text/css">
+    .hidden-footer {
+        display: none;
+    }
+
+    .hidden-column {
+        display: none;
+    }
+
+    th {
+        text-align: center;
+    }
+
+    th i {
+        margin-left: 5px;
+        cursor: pointer;
+        color: #555;
+    }
+
+    th i:hover {
+        color: #000;
+    }
+
+    tfoot td {
+        background-color: #d3d3d3;
+        font-weight: bold;
+    }
+
+    tbody td {
+        text-align: center;
+    }
+
+    .custom-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px;
+        border-radius: 5px;
+        color: #fff;
+        z-index: 1000;
+    }
+
+    .custom-notification.success {
+        background-color: #28a745;
+    }
+
+    .custom-notification.error {
+        background-color: #dc3545;
+    }
+
+    /* Стилі для розгортаючихся рядків */
+    .expandable-row {
+        cursor: pointer;
+    }
+
+    .expandable-row:hover {
+        background-color: #f8f9fa;
+    }
+
+    .toggle-icon {
+        transition: transform 0.2s ease;
+        cursor: pointer;
+        color: #007bff;
+    }
+
+    .details-row {
+        background-color: #f8f9fa;
+    }
+
+    .transaction-details {
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+        margin: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Стилі для транзакцій */
+    .transaction-btn {
+        margin: 2px;
+        font-size: 12px;
+        padding: 4px 8px;
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .transaction-btn:hover {
+        background-color: #545b62;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .transaction-actions {
+        margin-top: 10px;
+    }
+
+    .transaction-actions button {
+        margin-right: 5px;
+        font-size: 11px;
+        padding: 2px 6px;
+    }
+
+    /* Модальне вікно */
+    .transaction-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+    }
+
+    .transaction-modal-content {
+        background: white;
+        border-radius: 8px;
+        max-width: 600px;
+        width: 90%;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .transaction-modal-close {
+        float: right;
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+    }
+
+    .transaction-detail-row {
+        margin-bottom: 8px;
+    }
+
+    .fuel-amount {
+        font-weight: bold;
+        color: #28a745;
+    }
+
+    .transaction-summary {
+        margin-top: 15px;
+        padding: 10px;
+        background-color: #e3f2fd;
+        border-radius: 4px;
+        font-weight: 500;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box">
+                <h4 class="page-title">Звіт автомобілі компанії</h4>
+                <p>{{ avg_price|safe }}</p>
+                <div class="page-title-right" style="display: flex; gap: 10px; align-items: center; width: 550px;">
+                    <a href="/company-cars/all-pdf?year={{ selected_year }}" class="btn btn-primary btn-md"
+                        id="pdf-report-btn" target="_blank" style="white-space: nowrap;">
+                        <i class="fas fa-file-pdf me-1"></i> Звіт по всіх автомобілях за рік у PDF
+                    </a>
+                    <select class="form-select" id="month-select" onchange="updateUrl('month', this.value)"
+                        style="width: 120px;">
+                        {% for month in months %}
+                        <option value="{{ loop.index }}" {% if loop.index==selected_month %}selected{% endif %}>
+                            {{ month }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <select class="form-select" id="year-select" onchange="updateUrl('year', this.value)"
+                        style="width: 100px;">
+                        {% for year in years %}
+                        <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>
+                            {{ year }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="page-title mb-3 text-center">Дніпро-Скан-Сервіс</h4>
+                    <div class="table-responsive">
+                        <form method="post" id="fuel-form-dss">
+                            <table class="table" id="fuel-table-dss">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30px;"></th>
+                                        <th>Держ. номер авто</th>
+                                        <th class="hidden-column">Тип палива</th>
+                                        <th>Пробіг на початок місяця</th>
+                                        <th>Пробіг на кінець місяця</th>
+                                        <th>Пробіг за місяць</th>
+                                        <th>Заправлено за місяць</th>
+                                        <th>Розхід 100 км</th>
+                                        <th>Розхід за місяць / л.</th>
+                                        <th>Залишок на початок місяця / л.</th>
+                                        <th>Залишок на кінець місяця / л.</th>
+                                        <th>Дельта</th>
+                                        <th>Сума в грн</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for car in dss_cars %}
+                                    <tr class="expandable-row" data-car-id="{{ car.id }}">
+                                        <td><i class="fas fa-chevron-right toggle-icon"></i></td>
+                                        <td>{{ car.car_number }}</td>
+                                        <td class="hidden-column">{{ car.fuel_type }}</td>
+                                        <td class="numeric mileage">{{ car.start_mileage | round(0) }}</td>
+                                        <td>
+                                            <input type="number" step="1" name="end_mileage[]" data-id="{{ car.id }}"
+                                                value="{{ car.end_mileage | default(0) | round(0) }}"
+                                                class="form-control end-mileage-input">
+                                        </td>
+                                        <td class="numeric monthly-mileage">{{ ((car.end_mileage - car.start_mileage) |
+                                            default(0)) if (car.end_mileage - car.start_mileage) > 0 else 0 }}</td>
+                                        <td class="fuel-amount" data-car-id="{{ car.id }}">{{ car.okko_refueled |
+                                            default(0) | round(1) }}</td>
+                                        <td class="numeric">{{ car.fuel_norm | round(2) }}</td>
+                                        <td class="numeric fuel-consumed">{{ (((car.end_mileage - car.start_mileage) if
+                                            (car.end_mileage - car.start_mileage) > 0 else 0) * car.fuel_norm / 100) |
+                                            default(0) | round(2) }}</td>
+                                        <td class="numeric start-balance">{{ car.start_balance | round(2) }}</td>
+                                        <td class="numeric end-balance">{{ (car.start_balance + car.okko_refueled -
+                                            (((car.end_mileage - car.start_mileage) if (car.end_mileage -
+                                            car.start_mileage) > 0 else 0) * car.fuel_norm / 100)) |
+                                            default(car.start_balance) | round(2) }}</td>
+                                        <td class="numeric delta">{{ (car.okko_refueled - (((car.end_mileage -
+                                            car.start_mileage) if (car.end_mileage - car.start_mileage) > 0 else 0) *
+                                            car.fuel_norm / 100)) | default(0) | round(2) }}</td>
+                                        <td class="numeric approx-cost">{{ car.okko_cost | round(2) }}</td>
+                                        <input type="hidden" name="refueled[]" data-id="{{ car.id }}"
+                                            value="{{ car.okko_refueled | default(0) | round(2) }}"
+                                            class="refueled-input">
+                                    </tr>
+                                    <tr class="details-row" data-car-id="{{ car.id }}" style="display: none;">
+                                        <td></td>
+                                        <td colspan="12">
+                                            <div class="transaction-details">
+                                                <strong>Транзакції за місяць:</strong><br><br>
+                                                {% for transaction in car.transactions %}
+                                                <div style="display: inline-block; margin: 2px;">
+                                                    <button type="button" class="btn btn-secondary transaction-btn"
+                                                        data-transaction-id="{{ transaction.id }}">
+                                                        Чек #{{ transaction.id }} від {{ transaction.date }} ({{
+                                                        transaction.amount }} л)
+                                                    </button>
+                                                    <div class="transaction-actions" style="display: none;">
+                                                        {% if user_info.id == 11 %}
+                                                        <button type="button"
+                                                            class="btn btn-danger btn-sm delete-transaction"
+                                                            data-transaction-id="{{ transaction.id }}">
+                                                            <i class="fas fa-trash"></i> Видалити
+                                                        </button>
+                                                        <button type="button"
+                                                            class="btn btn-warning btn-sm reassign-transaction"
+                                                            data-transaction-id="{{ transaction.id }}">
+                                                            <i class="fas fa-exchange-alt"></i> Замінити
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                                {% if not car.transactions %}
+                                                <span class="text-muted">Немає транзакцій за цей період</span>
+                                                {% endif %}
+                                                <div class="transaction-summary">
+                                                    <strong>Загальна сума транзакцій: {{ car.transactions |
+                                                        sum(attribute='amount') | round(1) }} л | {{ car.okko_cost |
+                                                        round(0) }} грн</strong>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% if not dss_cars %}
+                                    <tr>
+                                        <td colspan="13" class="text-center">Немає даних для відображення</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="5" class="text-end"><strong>Всього:</strong></td>
+                                        <td id="total-refueled-dss"><strong>{{ (dss_cars |
+                                                sum(attribute='okko_refueled') if dss_cars else 0) | round(2) }}
+                                                л</strong></td>
+                                        <td colspan="5"></td>
+                                        <td id="total-approx-cost-dss"><strong>{{ (dss_cars | sum(attribute='okko_cost')
+                                                if dss_cars else 0) | round(0) }}</strong></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <div class="d-flex">
+                                <button type="submit" class="btn btn-primary ms-auto">Зберегти</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <h4 class="page-title mb-3 mt-4 text-center">ТФ</h4>
+                    <div class="table-responsive">
+                        <form method="post" id="fuel-form-tf">
+                            <table class="table" id="fuel-table-tf">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30px;"></th>
+                                        <th>Держ. номер авто</th>
+                                        <th class="hidden-column">Тип палива</th>
+                                        <th>Пробіг на початок місяця</th>
+                                        <th>Пробіг на кінець місяця</th>
+                                        <th>Пробіг за місяць</th>
+                                        <th>Заправлено за місяць</th>
+                                        <th>Розхід 100 км</th>
+                                        <th>Розхід за місяць / л.</th>
+                                        <th>Залишок на початок місяця / л.</th>
+                                        <th>Залишок на кінець місяця / л.</th>
+                                        <th>Дельта</th>
+                                        <th>Сума в грн</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for car in tf_cars %}
+                                    <tr class="expandable-row" data-car-id="{{ car.id }}">
+                                        <td><i class="fas fa-chevron-right toggle-icon"></i></td>
+                                        <td>{{ car.car_number }}</td>
+                                        <td class="hidden-column">{{ car.fuel_type }}</td>
+                                        <td class="numeric mileage">{{ car.start_mileage | round(0) }}</td>
+                                        <td>
+                                            <input type="number" step="1" name="end_mileage[]" data-id="{{ car.id }}"
+                                                value="{{ car.end_mileage | default(0) | round(0) }}"
+                                                class="form-control end-mileage-input">
+                                        </td>
+                                        <td class="numeric monthly-mileage">{{ ((car.end_mileage - car.start_mileage) |
+                                            default(0)) if (car.end_mileage - car.start_mileage) > 0 else 0 }}</td>
+                                        <td class="fuel-amount" data-car-id="{{ car.id }}">{{ car.okko_refueled |
+                                            default(0) | round(1) }}</td>
+                                        <td class="numeric">{{ car.fuel_norm | round(2) }}</td>
+                                        <td class="numeric fuel-consumed">{{ (((car.end_mileage - car.start_mileage) if
+                                            (car.end_mileage - car.start_mileage) > 0 else 0) * car.fuel_norm / 100) |
+                                            default(0) | round(2) }}</td>
+                                        <td class="numeric start-balance">{{ car.start_balance | round(2) }}</td>
+                                        <td class="numeric end-balance">{{ (car.start_balance + car.okko_refueled -
+                                            (((car.end_mileage - car.start_mileage) if (car.end_mileage -
+                                            car.start_mileage) > 0 else 0) * car.fuel_norm / 100)) |
+                                            default(car.start_balance) | round(2) }}</td>
+                                        <td class="numeric delta">{{ (car.okko_refueled - (((car.end_mileage -
+                                            car.start_mileage) if (car.end_mileage - car.start_mileage) > 0 else 0) *
+                                            car.fuel_norm / 100)) | default(0) | round(2) }}</td>
+                                        <td class="numeric approx-cost">{{ car.okko_cost | round(2) }}</td>
+                                        <input type="hidden" name="refueled[]" data-id="{{ car.id }}"
+                                            value="{{ car.okko_refueled | default(0) | round(2) }}"
+                                            class="refueled-input">
+                                    </tr>
+                                    <tr class="details-row" data-car-id="{{ car.id }}" style="display: none;">
+                                        <td></td>
+                                        <td colspan="12">
+                                            <div class="transaction-details">
+                                                <strong>Транзакції за місяць:</strong><br><br>
+                                                {% for transaction in car.transactions %}
+                                                <div style="display: inline-block; margin: 2px;">
+                                                    <button type="button" class="btn btn-secondary transaction-btn"
+                                                        data-transaction-id="{{ transaction.id }}">
+                                                        Чек #{{ transaction.id }} від {{ transaction.date }} ({{
+                                                        transaction.amount }} л)
+                                                    </button>
+                                                    <div class="transaction-actions" style="display: none;">
+                                                        {% if user_info.id == 11 %}
+                                                        <button type="button"
+                                                            class="btn btn-danger btn-sm delete-transaction"
+                                                            data-transaction-id="{{ transaction.id }}">
+                                                            <i class="fas fa-trash"></i> Видалити
+                                                        </button>
+                                                        <button type="button"
+                                                            class="btn btn-warning btn-sm reassign-transaction"
+                                                            data-transaction-id="{{ transaction.id }}">
+                                                            <i class="fas fa-exchange-alt"></i> Замінити
+                                                        </button>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                                {% if not car.transactions %}
+                                                <span class="text-muted">Немає транзакцій за цей період</span>
+                                                {% endif %}
+                                                <div class="transaction-summary">
+                                                    <strong>Загальна сума транзакцій: {{ car.transactions |
+                                                        sum(attribute='amount') | round(1) }} л | {{ car.okko_cost |
+                                                        round(2) }} грн</strong>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% if not tf_cars %}
+                                    <tr>
+                                        <td colspan="13" class="text-center">Немає даних для відображення</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="5" class="text-end"><strong>Всього:</strong></td>
+                                        <td id="total-refueled-tf"><strong>{{ (tf_cars | sum(attribute='okko_refueled')
+                                                if tf_cars else 0) | round(2) }} л</strong></td>
+                                        <td colspan="5"></td>
+                                        <td id="total-approx-cost-tf" style="text-align: center;">
+                                            <strong>{{ (tf_cars | sum(attribute='okko_cost') if tf_cars else 0) |
+                                                round(2) }}</strong>
+                                        </td>
+
+                                    </tr>
+                                </tfoot>
+                            </table>
+                            <div class="d-flex">
+                                <button type="submit" class="btn btn-primary ms-auto">Зберегти</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="text-end mt-3">
+                        <a type="button" class="btn btn-success"
+                            href="/company-fuel/pdf?month={{ selected_month }}&year={{ selected_year }}"
+                            target="_blank">Друк у PDF</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальне вікно для переназначення транзакції -->
+<div id="reassign-modal" class="transaction-modal" style="display: none;">
+    <div class="transaction-modal-content">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd;">
+            <h5 style="margin: 0;">Переназначити транзакцію</h5>
+            <button class="transaction-modal-close" onclick="closeReassignModal()">&times;</button>
+        </div>
+        <div>
+            <p>Оберіть нового власника для цієї транзакції:</p>
+            <select id="new-user-select" class="form-select user-select">
+                <option value="">Оберіть користувача...</option>
+            </select>
+            <div style="margin-top: 15px; text-align: right;">
+                <button type="button" class="btn btn-secondary" onclick="closeReassignModal()">Скасувати</button>
+                <button type="button" class="btn btn-primary" onclick="confirmReassign()">Підтвердити</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const avgPriceDict = {{ avg_price_dict | tojson | safe
+    }};
+    let currentTransactionId = null;
+
+    const forms = {
+        'dss': document.getElementById("fuel-form-dss"),
+        'tf': document.getElementById("fuel-form-tf")
+    };
+
+    // Обробка кліків по стрілочці
+    const toggleIcons = document.querySelectorAll('.toggle-icon');
+    toggleIcons.forEach(icon => {
+        icon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+
+            const row = icon.closest('tr');
+            const detailsRow = row.nextElementSibling;
+            if (detailsRow && detailsRow.classList.contains('details-row')) {
+                const display = detailsRow.style.display === 'none' || detailsRow.style.display === '' ? 'table-row' : 'none';
+                detailsRow.style.display = display;
+
+                const actionButtons = detailsRow.querySelectorAll('.transaction-actions');
+                actionButtons.forEach(actions => {
+                    actions.style.display = display === 'table-row' ? 'block' : 'none';
+                });
+
+                if (display === 'table-row') {
+                    icon.classList.remove('fa-chevron-right');
+                    icon.classList.add('fa-chevron-down');
+                } else {
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-right');
+                }
+            }
+        });
+    });
+
+    // Обробка кліків по кнопках транзакцій
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('transaction-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const transactionId = e.target.getAttribute('data-transaction-id');
+            if (!transactionId) return;
+
+            try {
+                const response = await fetch(`/api/get-transaction-details/${transactionId}`);
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showTransactionModal(data.transaction);
+                } else {
+                    showNotification('Помилка завантаження деталей транзакції: ' + (data.error || 'Невідома помилка'), 'error');
+                }
+            } catch (error) {
+                console.error('Помилка при запиті деталей транзакції:', error);
+                showNotification('Помилка з\'єднання з сервером', 'error');
+            }
+        }
+
+        if (e.target.classList.contains('delete-transaction') || e.target.closest('.delete-transaction')) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const btn = e.target.classList.contains('delete-transaction') ? e.target : e.target.closest('.delete-transaction');
+            const transactionId = btn.getAttribute('data-transaction-id');
+
+            if (confirm('Ви впевнені, що хочете видалити цю транзакцію?')) {
+                await deleteTransaction(transactionId);
+            }
+        }
+
+        if (e.target.classList.contains('reassign-transaction') || e.target.closest('.reassign-transaction')) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const btn = e.target.classList.contains('reassign-transaction') ? e.target : e.target.closest('.reassign-transaction');
+            const transactionId = btn.getAttribute('data-transaction-id');
+
+            await showReassignModal(transactionId);
+        }
+    });
+
+    function showTransactionModal(transaction) {
+        const modal = document.createElement('div');
+        modal.className = 'transaction-modal';
+        modal.innerHTML = `
+            <div class="transaction-modal-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd;">
+                    <h5 style="margin: 0;">Деталі транзакції #${transaction.id}</h5>
+                    <button class="transaction-modal-close" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
+                </div>
+                <div>
+                    <div class="transaction-detail-row"><strong>Дата і час:</strong> ${transaction.trans_date || 'Невідомо'}</div>
+                    <div class="transaction-detail-row"><strong>АЗС:</strong> ${transaction.azs_name || 'Невідомо'}</div>
+                    <div class="transaction-detail-row"><strong>Адреса:</strong> ${transaction.addr_name || 'Невідомо'}</div>
+                    <div class="transaction-detail-row"><strong>Об'єм палива:</strong> ${transaction.fuel_volume || transaction.amount || 0} л</div>
+                    <div class="transaction-detail-row"><strong>Ціна за літр:</strong> ${transaction.fuel_price || 0} грн</div>
+                    <div class="transaction-detail-row"><strong>Загальна сума:</strong> ${transaction.amnt_trans || transaction.price || 0} грн</div>
+                    <div class="transaction-detail-row"><strong>Продукт:</strong> ${transaction.product_desc || 'Невідомо'}</div>
+                    <div class="transaction-detail-row"><strong>Номер картки:</strong> ${transaction.card_num || 'Невідомо'}</div>
+                    ${transaction.person_name ? `<div class="transaction-detail-row"><strong>Водій:</strong> ${transaction.person_name}</div>` : ''}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const closeBtn = modal.querySelector('.transaction-modal-close');
+        closeBtn.addEventListener('click', () => {
+            modal.remove();
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    async function deleteTransaction(transactionId) {
+        try {
+            const response = await fetch(`/api/delete-transaction/${transactionId}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showNotification('Транзакцію успішно видалено!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification('Помилка видалення транзакції: ' + (data.error || 'Невідома помилка'), 'error');
+            }
+        } catch (error) {
+            console.error('Помилка при видаленні транзакції:', error);
+            showNotification('Помилка з\'єднання з сервером', 'error');
+        }
+    }
+
+    async function showReassignModal(transactionId) {
+        currentTransactionId = transactionId;
+
+        try {
+            const response = await fetch('/api/get-users-with-cards');
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                const select = document.getElementById('new-user-select');
+                select.innerHTML = '<option value="">Оберіть користувача...</option>';
+
+                data.users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = `${user.name} (${user.cards.join(', ')})`;
+                    select.appendChild(option);
+                });
+
+                document.getElementById('reassign-modal').style.display = 'flex';
+            } else {
+                showNotification('Помилка завантаження списку користувачів: ' + (data.error || 'Невідома помилка'), 'error');
+            }
+        } catch (error) {
+            console.error('Помилка при завантаженні користувачів:', error);
+            showNotification('Помилка з\'єднання з сервером', 'error');
+        }
+    }
+
+    window.closeReassignModal = function () {
+        document.getElementById('reassign-modal').style.display = 'none';
+        currentTransactionId = null;
+    };
+
+    window.confirmReassign = async function () {
+        const newUserId = document.getElementById('new-user-select').value;
+
+        if (!newUserId) {
+            showNotification('Оберіть користувача!', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/reassign-transaction/${currentTransactionId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    new_user_id: newUserId
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showNotification('Транзакцію успішно переназначено!', 'success');
+                closeReassignModal();
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            } else {
+                showNotification('Помилка переназначення транзакції: ' + (data.error || 'Невідома помилка'), 'error');
+            }
+        } catch (error) {
+            console.error('Помилка при переназначенні транзакції:', error);
+            showNotification('Помилка з\'єднання з сервером', 'error');
+        }
+    };
+
+    function updateUrl(paramName, paramValue) {
+        let currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set(paramName, paramValue);
+        window.location.href = currentUrl.toString();
+    }
+
+    function updatePdfReportUrl() {
+        const year = document.getElementById('year-select').value;
+        const pdfBtn = document.getElementById('pdf-report-btn');
+        pdfBtn.href = `/company-cars/all-pdf?year=${year}`;
+    }
+
+    const monthSelect = document.getElementById("month-select");
+    const yearSelect = document.getElementById("year-select");
+
+    monthSelect.addEventListener("change", (e) => updateUrl('month', e.target.value));
+    yearSelect.addEventListener("change", (e) => {
+        updateUrl('year', e.target.value);
+        updatePdfReportUrl();
+    });
+
+    updatePdfReportUrl();
+
+    function updateTotalRefueled(company) {
+        const refueledInputs = document.querySelectorAll(`#fuel-table-${company} .refueled-input`);
+        let total = 0;
+        refueledInputs.forEach(input => total += parseFloat(input.value) || 0);
+        const totalElement = document.getElementById(`total-refueled-${company}`);
+        if (totalElement) {
+            totalElement.innerHTML = `<strong>${total.toFixed(1)} л</strong>`;
+        }
+    }
+
+    /*
+    function updateTotalApproxCost(company) {
+        const rows = document.querySelectorAll(`#fuel-table-${company} tbody tr.expandable-row`);
+        let totalCost = 0;
+        rows.forEach(row => {
+            const refueledInput = row.querySelector('.refueled-input');
+            if (refueledInput) {
+                const refueled = parseFloat(refueledInput.value) || 0;
+                const fuelType = row.querySelector('.hidden-column').textContent.trim();
+                const avgPrice = avgPriceDict[fuelType] || 0;
+                const approxCost = Math.round(refueled * avgPrice);
+                const approxCostCell = row.querySelector('.approx-cost');
+                if (approxCostCell) {
+                    approxCostCell.textContent = approxCost.toLocaleString('uk-UA');
+                }
+                totalCost += approxCost;
+            }
+        });
+        const totalElement = document.getElementById(`total-approx-cost-${company}`);
+        if (totalElement) {
+            totalElement.innerHTML = `<strong>${totalCost.toLocaleString('uk-UA')}</strong>`;
+        }
+    }
+    */
+
+    function updateRowCalculations(row) {
+        const startMileage = parseFloat(row.children[3].textContent.replace(/\s/g, '')) || 0;
+        const endMileage = parseFloat(row.querySelector('.end-mileage-input').value) || 0;
+        const refueledInput = row.querySelector('.refueled-input');
+        const refueled = parseFloat(refueledInput.value) || 0;
+        const fuelNorm = parseFloat(row.children[7].textContent.replace(/\s/g, '')) || 0;
+        const startBalance = parseFloat(row.children[9].textContent.replace(/\s/g, '')) || 0;
+
+        const monthlyMileage = Math.max(Math.round(endMileage - startMileage), 0);
+        const fuelConsumed = monthlyMileage > 0 ? Number((monthlyMileage * fuelNorm / 100).toFixed(2)) : 0;
+        const endBalance = Number((startBalance + refueled - fuelConsumed).toFixed(2));
+        const delta = Number((refueled - fuelConsumed).toFixed(1));
+
+        row.querySelector('.monthly-mileage').textContent = monthlyMileage.toLocaleString('uk-UA', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        row.querySelector('.fuel-consumed').textContent = fuelConsumed.toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        row.querySelector('.end-balance').textContent = endBalance.toLocaleString('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        row.querySelector('.delta').textContent = delta.toLocaleString('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+        row.querySelector('.end-balance').style.color = endBalance >= 0 ? "green" : "red";
+        row.querySelector('.delta').style.color = delta > 0 ? "red" : "green";
+        row.querySelector('.start-balance').style.color = startBalance >= 0 ? "green" : "red";
+    }
+
+    function formatExistingCells(company) {
+        const rows = document.querySelectorAll(`#fuel-table-${company} tbody tr.expandable-row`);
+        rows.forEach(row => {
+            const numericCells = row.querySelectorAll('.numeric');
+            numericCells.forEach(cell => {
+                const value = parseFloat(cell.textContent.replace(/\s/g, '')) || 0;
+                const isMileage = cell.classList.contains('mileage') || cell.classList.contains('monthly-mileage');
+                const isFuelConsumed = cell.classList.contains('fuel-consumed');
+                const isFuelNorm = row.cells[7] === cell;
+                const isBalance = cell.classList.contains('start-balance') || cell.classList.contains('end-balance');
+
+                const formattedValue = (cell.classList.contains('monthly-mileage') && value < 0) ? 0 : (isMileage ? Math.round(value) : value);
+                cell.textContent = formattedValue.toLocaleString('uk-UA', {
+                    minimumFractionDigits: isMileage ? 0 : (isFuelConsumed || isFuelNorm || isBalance ? 2 : 1),
+                    maximumFractionDigits: isMileage ? 0 : (isFuelConsumed || isFuelNorm || isBalance ? 2 : 1)
+                });
+            });
+
+            const startBalanceCell = row.querySelector('.start-balance');
+            const endBalanceCell = row.querySelector('.end-balance');
+            const deltaCell = row.querySelector('.delta');
+
+            if (startBalanceCell && endBalanceCell && deltaCell) {
+                const startBalanceValue = parseFloat(startBalanceCell.textContent.replace(/\s/g, '')) || 0;
+                const endBalanceValue = parseFloat(endBalanceCell.textContent.replace(/\s/g, '')) || 0;
+                const deltaValue = parseFloat(deltaCell.textContent.replace(/\s/g, '')) || 0;
+
+                startBalanceCell.style.color = startBalanceValue >= 0 ? "green" : "red";
+                endBalanceCell.style.color = endBalanceValue >= 0 ? "green" : "red";
+                deltaCell.style.color = deltaValue > 0 ? "red" : "green";
+            }
+        });
+    }
+
+    ['dss', 'tf'].forEach(company => {
+        const endMileageInputs = document.querySelectorAll(`#fuel-table-${company} .end-mileage-input`);
+        endMileageInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                const row = input.closest('tr');
+                updateRowCalculations(row);
+                // updateTotalApproxCost(company); // Закоментовано, щоб не перезаписувати колонку
+            });
+            input.addEventListener('blur', () => {
+                input.value = Math.round(parseFloat(input.value || 0));
+            });
+        });
+
+        if (forms[company]) {
+            forms[company].addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const refueledInputs = forms[company].querySelectorAll('input[name="refueled[]"]');
+                const endMileageInputs = forms[company].querySelectorAll('input[name="end_mileage[]"]');
+
+                const fuelData = [];
+                refueledInputs.forEach((input, index) => {
+                    const carId = input.getAttribute('data-id');
+                    if (carId) {
+                        fuelData.push({
+                            car_id: carId,
+                            refueled: parseFloat(input.value) || 0,
+                            end_mileage: Math.round(parseFloat(endMileageInputs[index].value) || 0),
+                            month: document.getElementById('month-select').value,
+                            year: document.getElementById('year-select').value
+                        });
+                    }
+                });
+
+                console.log(`Дані для відправки (${company}):`, fuelData);
+
+                const response = await fetch('/api/company-fuel/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(fuelData)
+                });
+
+                const data = await response.json();
+                console.log(`Відповідь сервера (${company}):`, data);
+
+                if (response.ok) {
+                    showNotification("Дані успішно збережено!", 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showNotification("Помилка: " + (data.error || await response.text()), 'error');
+                }
+            });
+        }
+
+        formatExistingCells(company);
+        updateTotalRefueled(company);
+        // updateTotalApproxCost(company); // Закоментовано, щоб не перезаписувати
+    });
+
+    function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `custom-notification ${type}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(function () {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 500);
+        }, 5000);
+    }
+});
+</script>
+
+{% include 'base/footer.html' %}

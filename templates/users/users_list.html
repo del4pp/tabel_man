@@ -1,0 +1,419 @@
+{% include 'base/header.html' %}
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+
+
+<!-- Start Content-->
+                    <div class="container-fluid">
+
+                        <!-- start page title -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="page-title-box">
+                                    <div class="page-title-right">
+                                        <a href="users-all"><button type="button" class="btn btn-danger" >Показати звільнених</button></a>
+                                        <a href="users-mob"><button type="button" class="btn btn-danger" >Показати мобілізованих</button></a>
+                                        {% if user_info.user_access == 1 %}
+                                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#standard-modal">Додати користувача</button>
+                                        {% endif %}
+                                    </div>
+                                    <h4 class="page-title">Працівники</h4>
+                                </div>
+                            </div>
+                        </div>     
+                        <!-- end page title --> 
+
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="row mb-2">
+                
+                                        <div class="table-responsive">
+                                            <table class="table table-centered table-striped dt-responsive nowrap w-100" id="products-datatable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>ФІО</th>
+                                                        <th>Відділ</th>
+                                                        <th>Номер телефону</th>
+                                                        <th>Дата приєднання</th>
+                                                        <th>День народження</th>
+                                                        <th><center>Відпрацьовано днів</center></th>
+                                                        <th>Стать</th>
+                                                        <th>Статус</th>
+                                                        {% if user_info.user_access == 1 %}
+                                                            <th style="width: 75px;">Action</th>
+                                                        {% endif %}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for user in user_list %}
+                                                    <tr>
+                                                        <td class="table-user">
+                                                            <img src="{{user.user_avatar}}" alt="table-user" class="me-2 rounded-circle">
+                                                            <a href="profile-{{user.id}}" class="text-body fw-semibold">{{user.user_name}}</a>
+                                                        </td>
+                                                        <td>
+                                                            {{user.departament}}
+                                                        </td>
+                                                        <td>
+                                                            {{user.phone}}
+                                                        </td>
+                                                        <td>
+                                                            {{user.join}}
+                                                        </td>
+                                                        <td>
+                                                            <b>{{user.birth}}</b>
+                                                        </td>
+                                                        <td>
+                                                            <center><b>{{user.days_worked_formatted | default('Немає') }}</b></center>
+                                                        </td>
+                                                        <td>
+                                                            {{user.gender}}
+                                                        </td>
+                    									<td>
+                                                            {% if user.display == 1 %}
+                                                                <span class="badge badge-success-lighten">Активний</span>
+                                                            {% else %}
+                                                                <span class="badge badge-danger-lighten">Не активний</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        {% if user_info.user_access == 1 %}
+                                                        <td>
+                                                            <a href="#" class="action-icon"  data-bs-toggle="modal" data-bs-target="#standard-modal-edit" data-user-id="{{ user.id }}"><span style="font-size:12px">Редагувати</span></a>
+                                                            <a href="#" class="action-icon" data-bs-toggle="modal" data-bs-target="#standard-modal-del" data-user-id="{{ user.id }}"><span style="font-size:12px">Звільнити</span></a>
+                                                            <a href="#" class="action-icon" data-bs-toggle="modal" data-bs-target="#standard-modal-mob" data-user-id="{{ user.id }}"><span style="font-size:12px">Мобілізований</span></a>
+                                                        </td>
+                                                        {% endif %}
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div> <!-- end card-body-->
+                                </div> <!-- end card-->
+                            </div> <!-- end col -->
+                        </div>
+                        <!-- end row -->
+
+                    </div>
+                    <!-- container -->
+
+<!-- Standard modal -->
+<div id="standard-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+    <form method="post" action="users"> <!-- Додано тег form та метод POST -->
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="standard-modalLabel">Додавання користувача</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Всі поля вводу тепер мають унікальні name атрибути -->
+                    <div class="mb-3">
+                        <label for="user-full-name" class="form-label">Прізвище Ім'я по-Батькові</label>
+                        <input type="text" id="user-full-name" name="full_name" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="user-email" class="form-label">Email для входу</label>
+                        <input type="email" id="user-email" name="email" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label for="user-password" class="form-label">Пароль</label>
+                        <input type="password" id="user-password" name="password" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                    <label for="user-phone-1" class="form-label">Номер телефону 1</label>
+                    <input type="text" id="user-phone-1" name="phone1" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="user-phone-2" class="form-label">Номер телефону 2</label>
+                    <input type="text" id="user-phone-2" name="phone2" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="user-join-date" class="form-label">Дата приєднання до компанії</label>
+                    <input class="form-control" id="user-join-date" type="date" name="join_date">
+                </div>
+                <div class="mb-3">
+                    <label for="user-birthdate" class="form-label">Дата народження</label>
+                    <input class="form-control" id="user-birthdate" type="date" name="birthdate" value="1995-01-01">
+                </div>
+                <div class="mb-3">
+                    <label for="user-gender" class="form-label">Стать</label>
+                    <select class="form-select" id="user-gender" name="gender">
+                        <option selected>-</option>
+                        <option>Чоловік</option>
+                        <option>Жінка</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="user-department" class="form-label">Відділ</label>
+                    <select class="form-select" id="user-department" name="department[]" multiple>
+                        <option selected>-</option>
+                        {% for departament in department_list %}
+                            <option value="{{departament.id}}">{{departament.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Авто -->
+                <!--
+                <div class="mb-3">
+                    <label for="user-department" class="form-label">Марка авто</label>
+                    <input type="text" id="car-brand" name="car_brand" class="form-control" placeholder="Марка авто">
+                </div>
+                <div class="mb-3">
+                    <label for="user-department" class="form-label">Витрати на 100 км</label>
+                    <input type="number" id="fuel-consumption" name="fuel_consumption" class="form-control" placeholder="Розхід палива (л/100 км)" step="0.1" min="0">
+                </div>
+                <div class="mb-3">
+                    <label for="user-department" class="form-label">Тип палива</label>
+                    <select class="form-select" id="fuel-types" name="fuel_types[]" multiple>
+                        <option selected>-</option>
+                        <option value="Бензин">Бензин</option>
+                        <option value="Дизель">Дизель</option>
+                        <option value="Електрика">Електрика</option>
+                        <option value="Газ">Газ</option>
+                    </select>
+                </div> -->
+                <!--end авто -->
+
+                <div class="mb-3">
+                    <label for="user-company" class="form-label">Оформлений</label>
+                    <select class="form-select" id="user-company" name="company">
+                        {% for company in company_list %}
+                            <option value="{{company.id}}">{{company.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="user-dept-head" name="dept_head">
+                        <label class="form-check-label" for="user-dept-head">Керівник відділу?</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="user-admin" name="admin">
+                        <label class="form-check-label" for="user-admin">Адміністратор?</label>
+                    </div>
+                </div>
+            </div>      
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</form>
+</div><!-- /.modal -->
+
+
+<!-- Standard modal -->
+<div id="standard-modal-edit" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+    <form method="post" action="user-edit"> <!-- Додано тег form та метод POST -->
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="standard-modalLabel">Додавання користувача</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Всі поля вводу тепер мають унікальні name атрибути -->
+                    <div class="mb-3">
+                        <label for="user-full-name" class="form-label">Прізвище Ім'я по-Батькові</label>
+                        <input type="text" id="edit_user-full-name" name="edit_full_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="user-email" class="form-label">Email для входу</label>
+                        <input type="email" id="edit_user-email" name="edit_email" class="form-control" required>
+                    </div>
+                <div class="mb-3">
+                    <label for="user-phone-1" class="form-label">Номер телефону 1</label>
+                    <input type="text" id="edit_user-phone-1" name="edit_phone1" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="user-phone-2" class="form-label">Номер телефону 2</label>
+                    <input type="text" id="edit_user-phone-2" name="edit_phone2" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label for="user-birthdate" class="form-label">Дата народження</label>
+                    <input class="form-control" id="edit_user-birthdate" type="date" name="edit_birthdate" value="1995-01-01" required>
+                </div>
+                <div class="mb-3">
+                    <label for="user-join-date" class="form-label">Дата приєднання до компанії</label>
+                    <input class="form-control" id="edit_user-join-date" type="date" name="edit_join_date" required>
+                </div>
+                <div class="mb-3">
+                    <label for="user-gender" class="form-label">Стать</label>
+                    <select class="form-select" id="edit_user-gender" name="edit_gender" required>
+                        <option value="Чоловік">Чоловік</option>
+                        <option value="Жінка">Жінка</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="user-department" class="form-label">Відділ</label>
+                    <select class="form-select" id="edit_user-department" name="edit_department" multiple >
+                        {% for departament in department_list %}
+                            <option value="{{departament.id}}">{{departament.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="user-company" class="form-label">Оформлений</label>
+                    <select class="form-select" id="edit_user-company" name="edit_company" required>
+                        <option>-</option>
+                        {% for company in company_list %}
+                            <option value="{{company.id}}">{{company.name}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="user-dept-head" name="dept_head">
+                        <label class="form-check-label" for="user-dept-head">Керівник відділу?</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="user-admin" name="admin">
+                        <label class="form-check-label" for="user-admin">Адміністратор?</label>
+                    </div>
+                </div>
+            </div>      
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</form>
+</div><!-- /.modal -->
+
+
+
+
+<!-- Standard modal -->
+<div id="standard-modal-del" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+    <form method="post" action="delete-user">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="standard-modalLabel">Звільнення</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body">
+				<div class="mb-3">
+				    <label for="example-date" class="form-label">Дата звільнення</label>
+				    <input class="form-control" id="example-date" type="date" name="date-remove">
+				</div>
+				
+				<div class="mb-3">
+					<label for="plannedHours">Причина:</label>
+                    <input type="hidden" id="some-hidden-input" name="user_id" value="">
+            		<textarea class="form-control" rows="5" name="remove_reson"></textarea>
+				</div>
+
+            </div>		
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" id="saveChangesBtn" >Save changes</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+    </form>
+</div><!-- /.modal -->
+
+
+<div id="standard-modal-mob" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
+    <form method="post" action="mobi-user">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="standard-modalLabel">Мобілізований</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="example-date" class="form-label">Дата мобілізації</label>
+                    <input type="hidden" id="some-hidden-input-mob" name="user_id" value="">
+                    <input class="form-control" id="example-date" type="date" name="date-remove">
+                </div>
+                
+            </div>      
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" id="saveChangesBtnMob">Save changes</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+    </form>
+</div><!-- /.modal -->
+
+
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('#standard-modal-del').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Кнопка, яка активувала модальне вікно
+            var userId = button.data('user-id'); // Витягнення інформації про ID користувача
+            $('#some-hidden-input').val(userId); // Встановлення значення
+        });
+    });
+
+    $(document).ready(function() {
+        $('#standard-modal-mob').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Кнопка, яка активувала модальне вікно
+            var userId = button.data('user-id'); // Витягнення інформації про ID користувача
+            $('#some-hidden-input-mob').val(userId); // Встановлення значення
+        });
+    });
+
+
+    $(document).ready(function() {
+        $('#standard-modal-edit').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var userId = button.data('user-id');
+
+            // Виконання AJAX запиту для отримання даних про користувача
+            $.ajax({
+                url: '/api/user/' + userId,
+                type: 'GET',
+                success: function(user) {
+                    // Встановлення отриманих значень у поля форми
+                    $('#edit_user-full-name').val(user.full_name);
+                    $('#edit_user-email').val(user.email);
+                    $('#edit_user-phone-1').val(user.user_phone_1);
+                    $('#edit_user-phone-2').val(user.user_phone_2);
+                    $('#edit_user-birthdate').val(user.birthdate);
+                    $('#edit_user-join-date').val(user.join_date);
+                    $('#edit_user-gender').val(user.gender);
+                    $('#edit_user-company').val(Number(user.company_name));
+                    $('#edit_user-department').val(user.user_departament_id);
+                    console.log(user.company_name);
+                }
+            });
+        });
+    });
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+    var reasonTextarea = document.getElementById('myForm').querySelector('#reasonTextarea');
+    const saveChangesBtn = document.getElementById('saveChangesBtn'); // Кнопка за id
+
+    reasonTextarea.addEventListener('input', function() {
+        // Якщо текст введено, активувати кнопку, інакше - заблокувати
+        saveChangesBtn.disabled = !this.value.trim();
+    });
+});
+
+
+let table = new DataTable('#products-datatable', { 
+    info: false,
+    ordering: false,
+    paging: false
+});
+</script>
+
+{% include 'base/footer.html' %}

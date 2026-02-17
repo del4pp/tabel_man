@@ -1,0 +1,285 @@
+
+.success-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #28a745; /* Зелений колір для успіху */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    z-index: 9999;
+    animation: fade-in 0.5s ease-in-out;
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+.table-responsive {
+    max-height: 800px; /* або будь-яка інша висота, яка вам підходить */
+    overflow-y: auto;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+#basic-datatable {
+    width: 100%;
+}
+
+#basic-datatable th, #basic-datatable td {
+    border-right: 1px solid #ddd; /* Це додасть тонку сіру вертикальну лінію справа від кожної клітинки */
+}
+
+.card-body {
+    position: relative; /* Встановіть контейнер як відносний */
+}
+
+.dropdown-container {
+    position: absolute; /* Абсолютне позиціонування для dropdown */
+    top: 10px; /* Відступ зверху */
+    right: 10px; /* Відступ зправа */
+}
+
+.clickable-cell {
+    position: relative;
+    text-align: center; /* Центрування основного тексту */
+}
+
+.top-right {
+    position: absolute;
+    top: 2px;
+    right: 5px;
+    font-size: 1em; /* Менший розмір тексту */
+}
+
+.bottom-icon {
+    position: absolute;
+    bottom: 2px;
+    right: 5px;
+    font-size: 1em; /* Менший розмір тексту */
+}
+
+.bottom-icon-comment {
+    position: absolute;
+    bottom: 2px;
+    left: 5px;
+    font-size: 1em; /* Менший розмір тексту */
+}
+
+.top-icon-comment {
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    font-size: 1em; /* Менший розмір тексту */
+}
+
+.sticky-column {
+    position: sticky;
+    background-color: white;
+}
+
+.sticky-column:first-child {
+    left: 0;
+}
+
+.sticky-column:nth-child(2) {
+    left: 120px; /* Або використайте точну ширину першої колонки */
+}
+
+.clickable-cell.positive-difference {
+    background-color: #cea5ff; /* Кольор фону для позитивних значень */
+}
+
+.clickable-cell.vidprosivsja {
+    background-color: #f46527;
+}
+
+.clickable-cell.weekend {
+    background-color: #fff0df; /* Сірий колір для вихідних */
+}
+
+.clickable-cell.vacation {
+    background-color: #757475;
+}
+
+.clickable-cell.meducalpulse {
+    background-color: #9aba29;
+}
+
+
+.sticky-column.user_name_column {
+    z-index: 999;
+    background-color: white;
+}
+
+.clickable-cell.vacation-day {
+    background-color: #8E7CC3; /* або будь-який фіолетовий колір, який ви хочете використовувати */
+}
+
+.clickable-cell.medical-day {
+    background-color: #587a3a; /* або будь-який фіолетовий колір, який ви хочете використовувати */
+}
+
+.clickable-cell.work-day {
+    background-color: white; /* або будь-який фіолетовий колір, який ви хочете використовувати */
+}
+
+.clickable-cell.comandirovka {
+    background-color: #C65911;
+}
+
+.clickable-cell.white-text {
+    background-color: #FFBA00;
+}
+
+.clickable-cell.sessia {
+    background-color:#FFFF00;
+}
+.clickable-cell.vidgul {
+    background-color:#00B0F0;
+}
+
+.clickable-cell.remove {
+    background-color: #B671FB;
+}
+
+.clickable-cell.mobi {
+    background-color: #B7B7B7;
+}
+
+.clickable-cellsesia {
+    background-color:#FFFF00;
+}
+
+.department-separator {
+    border-top: 2px solid black; /* Чорна лінія на верхній частині клітинки */
+    padding: 0;
+    height: 0; /* Зменшує висоту клітинки */
+    border-right: none; /* Прибирає праву вертикальну лінію для цієї клітинки */
+}
+
+
+
+/* Стилі для закріпленого нижнього скролу */
+.fixed-horizontal-scroll {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #fff; /* Фоновий колір скролу */
+    overflow-x: auto; /* Додайте горизонтальний скрол, якщо контент виходить за межі */
+    white-space: nowrap; /* Заборонити перенесення тексту */
+    border-top: 1px solid #ccc; /* Опціональна горизонтальна лінія роздільника */
+}
+
+
+
+/* Зелений колір для позитивних значень */
+.clickable-cell.positive-value {
+    background-color: green;
+}
+
+.clickable-cell.work-home {
+    background-color: #A64D79;
+}
+
+.clickable-cell.dontknow {
+    background-color: #FF0000;
+}
+
+.clickable-cell.mymoney {
+    background-color: #55E6EC;
+}
+
+.clickable-cell.vidabopiz {
+    background-color: #ea78fc;
+}
+
+.clickable-cell.compensation {
+    background-color: #ff8a82;
+}
+
+/* Червоний колір для від'ємних значень */
+.clickable-cell.negative-value {
+    background-color: #bd0205;
+}
+
+.new-department {
+    border-top: 2px solid black; /* Додає товсту чорну лінію зверху клітинки */
+}
+
+.leader-change {
+    border-top: 2px dashed silver; /* Робить лінію пунктирною та чорною */
+}
+
+
+/* Жовтий колір для стандартних значень */
+.clickable-cell.default-value {
+    background-color: yellow;
+}
+
+.dropdown-wrapper {
+    display: flex;
+    justify-content: start; /* Вирівнювання елементів на початку контейнера */
+}
+
+.dropdown-container {
+    margin-right: 10px; /* Додає невеликий відступ між вибірниками */
+}
+
+.dropdown-container:last-child {
+    margin-right: 0; /* Видаляє марджин у останнього елемента */
+}
+
+.sticky-head {
+    position: sticky;
+    top: 0;
+    background-color: white; /* Встановлює фон, щоб зміст під заголовками не був видимим через них */
+    z-index: 50; /* Забезпечує, що заголовки з'являться над іншими елементами */
+}
+
+#basic-datatable th, #basic-datatable td {
+    font-size: 12px; /* Або будь-яке інше значення, яке вам підходить */
+    padding: 0.65rem 0.65rem;;
+}
+
+
+/* Сповіщення */
+.custom-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #4CAF50;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.custom-notification.error {
+    background-color: #FF5252;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

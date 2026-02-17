@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+    <html lang="en">
+
+    <head>
+        <meta charset="utf-8" />
+        <title>Tabel Scania </title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
+        <meta content="Coderthemes" name="author" />
+        <!-- App favicon -->
+        <link rel="shortcut icon" href="static/assets/images/favicon.ico">
+
+        <!-- third party css -->
+        <link href="static/assets/css/vendor/fullcalendar.min.css" rel="stylesheet" type="text/css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+        <!-- third party css end -->
+
+        <!-- App css -->
+        <link href="static/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+        <link href="static/assets/css/app-creative.min.css" rel="stylesheet" type="text/css" id="light-style" />
+        <link href="static/assets/css/app-creative-dark.min.css" rel="stylesheet" type="text/css" id="dark-style" />
+
+    </head>
+
+    <body class="loading" data-layout="topnav" data-layout-config='{"layoutBoxed":false,"darkMode":false,"showRightSidebarOnStart": true}'>
+        <!-- Begin page -->
+        <div class="wrapper">
+
+            <!-- ============================================================== -->
+            <!-- Start Page Content here -->
+            <!-- ============================================================== -->
+
+            <div class="content-page">
+                <div class="content">
+                    <!-- Topbar Start -->
+                    <div class="navbar-custom topnav-navbar topnav-navbar-dark">
+                        <div class="">
+
+                            <!-- LOGO -->
+                            <a href="/calendar" class="topnav-logo">
+                                <span class="topnav-logo-lg">
+                                    <img src="https://scania.dp.ua/wp-content/uploads/2020/10/logo_footer-1.png" alt="" height="56">
+                                </span>
+                                <span class="topnav-logo-sm">
+                                    <img src="https://scania.dp.ua/wp-content/uploads/2020/10/logo_footer-1.png" alt="" height="16">
+                                </span>
+                            </a>
+
+                            <ul class="list-unstyled topbar-menu float-end mb-0">
+
+                                <li class="dropdown notification-list">
+                                    <a class="nav-link dropdown-toggle nav-user arrow-none me-0" data-bs-toggle="dropdown" id="topbar-userdrop" href="#" role="button" aria-haspopup="true"
+                                        aria-expanded="false">
+                                        <span class="account-user-avatar"> 
+                                            <img src="{{user_info.user_avatar}}" alt="user-image" class="rounded-circle">
+                                        </span>
+                                        <span>
+                                            <span class="account-user-name">{{user_info.full_name}}</span>
+                                            <span class="account-position">{{user_info.departament_name}}</span>
+                                        </span>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end dropdown-menu-animated topbar-dropdown-menu profile-dropdown" aria-labelledby="topbar-userdrop">
+                                        
+                                        <!-- item-->
+                                        <a href="logout" class="dropdown-item notify-item">
+                                            <i class="mdi mdi-logout me-1"></i>
+                                            <span>Logout</span>
+                                        </a>
+    
+                                    </div>
+                                </li>
+
+                            </ul>
+                            <a class="navbar-toggle"  data-bs-toggle="collapse" data-bs-target="#topnav-menu-content">
+                                <div class="lines">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </a>
+                            <div class="app-search dropdown">
+
+            
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end Topbar -->
+
+
+<!-- Додаємо оверлей зі спінером -->
+<div class="loading-overlay">
+    <div class="scania-text">SCANIA</div>
+    <div class="spinner"></div>
+    <div class="loading-text">Loading...</div>
+</div>
+
+<style>
+/* Стилі для оверлею */
+/* Стилі для оверлею */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 99999;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loading-overlay.active {
+        display: flex;
+    }
+
+    /* Стилі для тексту SCANIA з дуже класним градієнтом */
+    .scania-text {
+        font-size: 70px; /* Збільшуємо розмір для більшого ефекту */
+        font-family: 'Arial Black', Arial, sans-serif; /* Жирний шрифт для солідності */
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 8px; /* Більший міжлітерний інтервал */
+        background: linear-gradient(
+            135deg, 
+            #ff007a, /* Яскравий рожевий */
+            #ff4d00, /* Помаранчевий */
+            #ffd700, /* Золотий */
+            #00ff7f, /* Світло-зелений */
+            #00b7ff, /* Блакитний */
+            #8a2be2, /* Фіолетовий */
+            #ff007a  /* Повернення до рожевого */
+        );
+        background-size: 300% 300%; /* Збільшуємо розмір градієнта для ширшої анімації */
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: gradientShift 4s ease-in-out infinite; /* Швидша і плавніша анімація */
+        text-shadow: 
+            0 0 10px rgba(255, 255, 255, 0.8), /* Біле сяйво */
+            0 0 20px rgba(255, 0, 122, 0.6), /* Рожеве сяйво */
+            0 0 30px rgba(0, 183, 255, 0.4); /* Блакитне сяйво */
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+        100% { background-position: 0% 0%; }
+    }
+
+    /* Стилі для спінера */
+    .spinner {
+        width: 60px;
+        height: 60px;
+        border: 6px solid #fff;
+        border-top: 6px solid #ff007a; /* Колір градієнта для гармонії */
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-top: 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Стилі для тексту Loading... */
+    .loading-text {
+        color: #fff;
+        font-size: 22px;
+        font-family: Arial, sans-serif;
+        margin-top: 15px;
+        animation: pulse 1.5s infinite;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); /* Легке сяйво */
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.4; }
+        100% { opacity: 1; }
+    }
+
+</style>
+
+{% include 'base/menu.html' %}

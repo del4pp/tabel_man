@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "OKKO Fuel Prices Auth Extractor",
+  "version": "1.0",
+  "description": "Extracts authorization headers from fuel prices API requests on ssp-online-back.okko.ua",
+  "permissions": [
+    "webRequest",
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "*://ssp-online-back.okko.ua/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "OKKO Auth Extractor"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.okko.ua/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.okko.ua/*"],
+      "js": ["content_main.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}
