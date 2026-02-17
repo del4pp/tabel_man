@@ -4,77 +4,80 @@
 <!-- Start Content-->
 <div class="container-fluid">
    <!-- start page title -->
-<div class="row">
-   <div class="col-12">
-      <div class="page-title-box">
-         <div class="page-title-right">
-            <ol class="breadcrumb m-0">
-               <li class="breadcrumb-item"><a href="javascript: void(0);">Scania</a></li>
-               <li class="breadcrumb-item"><a href="javascript: void(0);">Pages</a></li>
-               <li class="breadcrumb-item active">Profile</li>
-            </ol>
+   <div class="row">
+      <div class="col-12">
+         <div class="page-title-box">
+            <div class="page-title-right">
+               <ol class="breadcrumb m-0">
+                  <li class="breadcrumb-item"><a href="javascript: void(0);">MAN</a></li>
+                  <li class="breadcrumb-item"><a href="javascript: void(0);">Pages</a></li>
+                  <li class="breadcrumb-item active">Profile</li>
+               </ol>
+            </div>
+            <h4 class="page-title">Profile</h4>
          </div>
-         <h4 class="page-title">Profile</h4>
       </div>
    </div>
-</div>
-<!-- end page title --> 
+   <!-- end page title -->
 
-<div class="row">
-   <div class="col-sm-12">
-      <!-- Profile -->
-      <div class="card">
-         <div class="card-body profile-user-box">
-            <div class="row">
-               <div class="col-sm-9">
-                  <div class="row align-items-center">
-                     <div class="col-auto">
-                        <div class="avatar-lg" onclick="document.getElementById('fileInput').click();">
-                           <img src="{{profile_info.user_avatar}}" alt="" class="rounded-circle img-thumbnail">
+   <div class="row">
+      <div class="col-sm-12">
+         <!-- Profile -->
+         <div class="card">
+            <div class="card-body profile-user-box">
+               <div class="row">
+                  <div class="col-sm-9">
+                     <div class="row align-items-center">
+                        <div class="col-auto">
+                           <div class="avatar-lg" onclick="document.getElementById('fileInput').click();">
+                              <img src="{{profile_info.user_avatar}}" alt="" class="rounded-circle img-thumbnail">
+                           </div>
+                           <input type="file" id="fileInput" style="display: none;" onchange="uploadAvatar(this)" />
                         </div>
-                        <input type="file" id="fileInput" style="display: none;" onchange="uploadAvatar(this)" />
-                     </div>
-                     <div class="col">
-                        <div>
-                           <h4 class="mt-1 mb-1">{{profile_info.full_name}}</h4>
-                           <ul class="mb-0 list-inline">
-                              <li class="list-inline-item me-3">
-                                 <h5 class="mb-1">{{profile_info.user_departament}}</h5>
-                                 <h5 class="mb-1">{% if profile_info.user_access == 2 %}Керівник відділу{% endif %}</h5>
-                              </li>
-                           </ul>
+                        <div class="col">
+                           <div>
+                              <h4 class="mt-1 mb-1">{{profile_info.full_name}}</h4>
+                              <ul class="mb-0 list-inline">
+                                 <li class="list-inline-item me-3">
+                                    <h5 class="mb-1">{{profile_info.user_departament}}</h5>
+                                    <h5 class="mb-1">{% if profile_info.user_access == 2 %}Керівник відділу{% endif %}
+                                    </h5>
+                                 </li>
+                              </ul>
+                           </div>
                         </div>
                      </div>
                   </div>
+                  <!-- end col-->
+                  <div class="col-sm-3">
+                     <div class="text-center mt-sm-0 mt-3 text-sm-end">
+                        <div style="text-align: right;">
+                           <label for="example-select" class="form-label">Виберіть рік:</label>
+                           <select class="form-select mb-3" id="example-select" onchange="location = this.value;">
+                              {% for year in years_list %}
+                              <option value="profile-{{user_id}}?year={{year}}" {% if year==year_now %} selected {%
+                                 endif %}>{{year}}</option>
+                              {% endfor %}
+                           </select>
+                           <button class="btn btn-light w-100">
+                              <a href="report-{{profile_info.id}}-{{year_now}}" target="_blank"
+                                 style="text-decoration: none; color: inherit;">
+                                 <i class="dripicons-print"></i> Роздрукувати звіт працівника
+                              </a>
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+                  <!-- end col-->
                </div>
-               <!-- end col-->
-               <div class="col-sm-3">
-                   <div class="text-center mt-sm-0 mt-3 text-sm-end">
-                      <div style="text-align: right;">
-                         <label for="example-select" class="form-label">Виберіть рік:</label>
-                         <select class="form-select mb-3" id="example-select" onchange="location = this.value;" >
-                            {% for year in years_list %}
-                            <option value="profile-{{user_id}}?year={{year}}" {% if year == year_now %} selected {% endif %}>{{year}}</option>
-                            {% endfor %}
-                         </select>
-                         <button class="btn btn-light w-100">
-                            <a href="report-{{profile_info.id}}-{{year_now}}" target="_blank" style="text-decoration: none; color: inherit;">
-                               <i class="dripicons-print"></i> Роздрукувати звіт працівника
-                            </a>
-                         </button>
-                      </div>
-                   </div>
-                </div>
-               <!-- end col-->
+               <!-- end row -->
             </div>
-            <!-- end row -->
+            <!-- end card-body/ profile-user-box-->
          </div>
-         <!-- end card-body/ profile-user-box-->
+         <!--end profile/ card -->
       </div>
-      <!--end profile/ card -->
+      <!-- end col-->
    </div>
-   <!-- end col-->
-</div>
 
 
    <!-- end row -->
@@ -84,32 +87,42 @@
          <div class="card">
             <div class="card-body">
                <h4 class="header-title mt-0 mb-3">Інформація про користувача</h4>
-               <hr/>
+               <hr />
                <div class="text-start">
-                  <p class="text-muted"><strong>Оформлений на:</strong> <span class="ms-2">{{profile_info.company_str_name}}</span></p>
-                  <p class="text-muted"><strong>Повне ім'я:</strong> <span class="ms-2">{{profile_info.full_name}}</span></p>
-                  <p class="text-muted"><strong>Телефон 1:</strong><span class="ms-2">{{profile_info.user_phone_1}}</span></p>
-                  <p class="text-muted"><strong>Телефон 2:</strong><span class="ms-2">{{profile_info.user_phone_2}}</span></p>
+                  <p class="text-muted"><strong>Оформлений на:</strong> <span
+                        class="ms-2">{{profile_info.company_str_name}}</span></p>
+                  <p class="text-muted"><strong>Повне ім'я:</strong> <span
+                        class="ms-2">{{profile_info.full_name}}</span></p>
+                  <p class="text-muted"><strong>Телефон 1:</strong><span
+                        class="ms-2">{{profile_info.user_phone_1}}</span></p>
+                  <p class="text-muted"><strong>Телефон 2:</strong><span
+                        class="ms-2">{{profile_info.user_phone_2}}</span></p>
                   <p class="text-muted"><strong>Email :</strong> <span class="ms-2">{{profile_info.email}}</span></p>
-                  <p class="text-muted"><strong>Дата народження :</strong> <span class="ms-2">{{profile_info.birthdate}}</span></p>
+                  <p class="text-muted"><strong>Дата народження :</strong> <span
+                        class="ms-2">{{profile_info.birthdate}}</span></p>
                   <div class="text-center">
                      {% if user_info.id == 11 %}
-                     <button type="button" class="btn btn-light" style="width: 100%;" data-bs-toggle="modal" data-bs-target="#access-rights-modal">
+                     <button type="button" class="btn btn-light" style="width: 100%;" data-bs-toggle="modal"
+                        data-bs-target="#access-rights-modal">
                         <i class="fas fa-user-shield me-1"></i> Редагувати права доступу
                      </button><br><br>
                      {% endif %}
-                     <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#work-schedule-modal" style="width: 100%;">
+                     <button type="button" class="btn btn-light" data-bs-toggle="modal"
+                        data-bs-target="#work-schedule-modal" style="width: 100%;">
                         <i class="fas fa-calendar-day me-1"></i> Редагувати розклад
                      </button><br><br>
                      {% if user_info.id == 11 %}
-                     <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#vacation-days-modal" style="width: 100%;">
+                     <button type="button" class="btn btn-light" data-bs-toggle="modal"
+                        data-bs-target="#vacation-days-modal" style="width: 100%;">
                         <i class="fas fa-sun me-1"></i> Встановити відпустку (к-сть днів)
                      </button><br><br>
-                     <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#vacation-canceled-days-modal" style="width: 100%;">
+                     <button type="button" class="btn btn-light" data-bs-toggle="modal"
+                        data-bs-target="#vacation-canceled-days-modal" style="width: 100%;">
                         <i class="fas fa-times-circle me-1"></i> Анулювати відпустку
                      </button><br><br>
                      {% endif %}
-                     <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#vacation-period-modal" style="width: 100%;">
+                     <button type="button" class="btn btn-light" data-bs-toggle="modal"
+                        data-bs-target="#vacation-period-modal" style="width: 100%;">
                         <i class="fas fa-calendar-check me-1"></i> Задати дні відпустки
                      </button><br><br>
                      {% if user_info.id == 11 %}
@@ -122,7 +135,8 @@
                      {% endif %}
 
                      {% if user_info.id == 11 %}
-                     <button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#access-head-modal" style="width: 100%;">
+                     <button type="button" class="btn btn-light" data-bs-toggle="modal"
+                        data-bs-target="#access-head-modal" style="width: 100%;">
                         <i class="fas fa-user-tie me-1"></i> Призначити керівника
                      </button><br><br>
                      {% endif %}
@@ -142,7 +156,8 @@
                      {% for vacation in vacation_list %}
                      <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>
-                        <strong>{{ vacation.year }}</strong>: {{ vacation.count_days }} днів {% if vacation.canceled_days >= 1 %} ({{vacation.canceled_days}} днів анульовано) {% endif %}
+                           <strong>{{ vacation.year }}</strong>: {{ vacation.count_days }} днів {% if
+                           vacation.canceled_days >= 1 %} ({{vacation.canceled_days}} днів анульовано) {% endif %}
                         </span>
                      </li>
                      {% endfor %}
@@ -162,7 +177,7 @@
                   <div class="card-body">
                      <h6 class="text-muted text-uppercase mt-0">
                         Залишилося з попередніх років
-                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
+                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
                            title="Кількість днів, які не були використані в попередні роки.">
                         </i>
                      </h6>
@@ -178,7 +193,7 @@
                   <div class="card-body">
                      <h6 class="text-muted text-uppercase mt-0">
                         Доступно в цьому році
-                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
+                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
                            title="Кількість днів відпустки, доступних у цьому році.">
                         </i>
                      </h6>
@@ -194,7 +209,7 @@
                   <div class="card-body">
                      <h6 class="text-muted text-uppercase mt-0">
                         Використано днів відпустки
-                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
+                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
                            title="Кількість днів відпустки, які були використані від початку року до сьогодні.">
                         </i>
                      </h6>
@@ -213,7 +228,7 @@
                         <div class="card-body">
                            <h6 class="text-muted text-uppercase mt-0">
                               Компенсація відпустки
-                              <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
+                              <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
                                  title="Компенсація за невикористану відпустку.">
                               </i>
                            </h6>
@@ -230,7 +245,7 @@
                         <div class="card-body">
                            <h6 class="text-muted text-uppercase mt-0">
                               Анулювання відпустки
-                              <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
+                              <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
                                  title="Кількість анульованих днів відпустки.">
                               </i>
                            </h6>
@@ -250,7 +265,7 @@
                   <div class="card-body">
                      <h6 class="text-muted text-uppercase mt-0">
                         Залишилося днів відпустки
-                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
+                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
                            title="Кількість днів, що залишилися для використання відпустки.">
                         </i>
                      </h6>
@@ -266,7 +281,7 @@
                   <div class="card-body">
                      <h6 class="text-muted text-uppercase mt-0">
                         Залишилося на наступний рік
-                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top" 
+                        <i class="fas fa-info-circle" data-bs-toggle="tooltip" data-bs-placement="top"
                            title="Залишок на наступний рік = невикористана відпустка на сьогодні - кількість днів відпустки, запланованої на наступний рік.">
                         </i>
                      </h6>
@@ -292,7 +307,8 @@
                      <h2 class="m-b-20">{{ vacation.start_date }} <br> {{ vacation.end_date }}</h2>
                      <!-- Кнопки внизу карти -->
                      <div class="d-flex justify-content-end">
-                        <button class="btn btn-danger btn-sm" onclick="deleteVacation('{{ user_id }}', '{{ vacation.start_date }}', '{{ vacation.end_date }}')">Видалити</button>
+                        <button class="btn btn-danger btn-sm"
+                           onclick="deleteVacation('{{ user_id }}', '{{ vacation.start_date }}', '{{ vacation.end_date }}')">Видалити</button>
                      </div>
                   </div>
                   <!-- end card-body-->
@@ -308,7 +324,8 @@
    <!-- end row -->
 </div>
 <!-- container -->
-<div id="access-head-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="access-head-modalLabel" aria-hidden="true">
+<div id="access-head-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="access-head-modalLabel"
+   aria-hidden="true">
    <form method="post" action="/update-access-head">
       <div class="modal-dialog">
          <div class="modal-content">
@@ -322,7 +339,7 @@
                   <label class="form-label">Призначений керівник</label><br>
                   {% for leader in leaders_list %}
                   <div class="leaderItem" data-headid="{{leader.head_id}}" data-profileid="{{user_id}}">
-                     {{leader.head_name}}  
+                     {{leader.head_name}}
                      <i class="mdi mdi-delete deleteIcon" alt="Видалити"></i>
                   </div>
                   {% endfor %}
@@ -351,7 +368,8 @@
 </div>
 <!-- /.modal -->
 <!-- Standard modal -->
-<div id="access-rights-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="access-rights-modalLabel" aria-hidden="true">
+<div id="access-rights-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="access-rights-modalLabel"
+   aria-hidden="true">
    <form method="post" action="update-access-rights">
       <div class="modal-dialog">
          <div class="modal-content">
@@ -366,12 +384,16 @@
                   <label class="form-label">{{ department.name }}</label>
                   <!-- Інші поля -->
                   <div class="form-check">
-                     <input class="form-check-input" type="checkbox" name="read_{{ department.id }}" id="read_{{ department.id }}" {% if check_access(department_access.get(department.id, 0), 4) or check_access(department_access.get(department.id, 0), 2) %} checked {% endif %}>
+                     <input class="form-check-input" type="checkbox" name="read_{{ department.id }}"
+                        id="read_{{ department.id }}" {% if check_access(department_access.get(department.id, 0), 4) or
+                        check_access(department_access.get(department.id, 0), 2) %} checked {% endif %}>
                      <input type="hidden" name="user_id" value="{{user_id}}">
                      <label class="form-check-label" for="read_{{ department.id }}">Читання</label>
                   </div>
                   <div class="form-check">
-                     <input class="form-check-input" type="checkbox" name="edit_{{ department.id }}" id="edit_{{ department.id }}" {% if check_access(department_access[department.id], 2) %} checked {% endif %}>
+                     <input class="form-check-input" type="checkbox" name="edit_{{ department.id }}"
+                        id="edit_{{ department.id }}" {% if check_access(department_access[department.id], 2) %} checked
+                        {% endif %}>
                      <label class="form-check-label" for="edit_{{ department.id }}">Редагування</label>
                   </div>
                </div>
@@ -389,7 +411,8 @@
 </div>
 <!-- /.modal -->
 <!-- Модальне вікно для кількості днів відпустки -->
-<div id="vacation-days-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="vacation-days-modalLabel" aria-hidden="true">
+<div id="vacation-days-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="vacation-days-modalLabel"
+   aria-hidden="true">
    <form method="post" action="set-vacation-days">
       <div class="modal-dialog">
          <div class="modal-content">
@@ -401,7 +424,8 @@
                <div class="mb-3">
                   <label for="vacation-year" class="form-label">Рік</label>
                   <input type="hidden" name="user_id" value="{{user_id}}">
-                  <input class="form-control" id="vacation-year" type="number" name="vacation_year" min="2023" max="2100">
+                  <input class="form-control" id="vacation-year" type="number" name="vacation_year" min="2023"
+                     max="2100">
                </div>
                <div class="mb-3">
                   <label for="vacation-days" class="form-label">Кількість днів відпустки</label>
@@ -420,7 +444,8 @@
 </div>
 
 
-<div id="vacation-canceled-days-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="vacation-canceled-days-modalLabel" aria-hidden="true">
+<div id="vacation-canceled-days-modal" class="modal fade" tabindex="-1" role="dialog"
+   aria-labelledby="vacation-canceled-days-modalLabel" aria-hidden="true">
    <form method="post" action="{{ url_for('set_canceled_vacation_days') }}">
       <div class="modal-dialog">
          <div class="modal-content">
@@ -432,7 +457,8 @@
                <div class="mb-3">
                   <label for="vacation-year" class="form-label">Рік</label>
                   <input type="hidden" name="user_id" value="{{ user_id }}">
-                  <input class="form-control" id="vacation-year" type="number" name="canceled_year" min="2023" max="2100" required>
+                  <input class="form-control" id="vacation-year" type="number" name="canceled_year" min="2023"
+                     max="2100" required>
                </div>
                <div class="mb-3">
                   <label for="vacation-days" class="form-label">Кількість днів відпустки які треба анулювати</label>
@@ -453,7 +479,8 @@
 
 <!-- /.modal -->
 <!-- Модальне вікно для вибору періоду відпустки -->
-<div id="vacation-period-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="vacation-period-modalLabel" aria-hidden="true">
+<div id="vacation-period-modal" class="modal fade" tabindex="-1" role="dialog"
+   aria-labelledby="vacation-period-modalLabel" aria-hidden="true">
    <form method="post" action="set-vacation-period">
       <div class="modal-dialog">
          <div class="modal-content">
@@ -464,9 +491,10 @@
             </div>
             <div class="modal-body">
                <div id="vacation-dates-container">
-                  <div class="mb-3 date-input" >
+                  <div class="mb-3 date-input">
                      <label for="vacation-start" class="form-label">Період відпустки </label>
-                     <input type="text" class="form-control date" id="vacation-start-1" data-toggle="date-picker" data-cancel-class="btn-warning" name="vacation_start[]">
+                     <input type="text" class="form-control date" id="vacation-start-1" data-toggle="date-picker"
+                        data-cancel-class="btn-warning" name="vacation_start[]">
                   </div>
                </div>
                <!--<button type="button" class="btn btn-primary" onclick="addDateField()">+</button>-->
@@ -483,7 +511,8 @@
 </div>
 <!-- /.modal -->
 <!-- Модальне вікно для ліміту місяця -->
-<div id="fuel-limit-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fuel-limit-modalLabel" aria-hidden="true">
+<div id="fuel-limit-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fuel-limit-modalLabel"
+   aria-hidden="true">
    <form method="post" action="set-fuel-limit">
       <div class="modal-dialog">
          <div class="modal-content">
@@ -506,7 +535,8 @@
       </div>
    </form>
 </div>
-<div id="change-car-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="change-car-modalLabel" aria-hidden="true">
+<div id="change-car-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="change-car-modalLabel"
+   aria-hidden="true">
    <form method="post" action="change-car">
       <div class="modal-dialog">
          <div class="modal-content">
@@ -518,25 +548,30 @@
             <div class="modal-body">
                <div class="mb-3">
                   <label for="car-brand" class="form-label">Марка авто</label>
-                  <input type="text" class="form-control" id="car-brand" name="car_brand" value="{{car_info.auto_name}}" required>
+                  <input type="text" class="form-control" id="car-brand" name="car_brand" value="{{car_info.auto_name}}"
+                     required>
                </div>
                <div class="mb-3">
                   <label for="fuel-type" class="form-label">Тип палива</label>
                   <select class="form-select" id="fuel-type" name="fuel_type" required>
-                     <option value="Бензин" {% if car_info.fuel_type == 'Бензин' %} selected {% endif %}>Бензин</option>
-                     <option value="Дизель" {% if car_info.fuel_type == 'Дизель' %} selected {% endif %}>Дизель</option>
-                     <option value="Електрика" {% if car_info.fuel_type == 'Електрика' %} selected {% endif %}>Електрика</option>
-                     <option value="Газ" {% if car_info.fuel_type == 'Газ' %} selected {% endif %}>Газ</option>
+                     <option value="Бензин" {% if car_info.fuel_type=='Бензин' %} selected {% endif %}>Бензин</option>
+                     <option value="Дизель" {% if car_info.fuel_type=='Дизель' %} selected {% endif %}>Дизель</option>
+                     <option value="Електрика" {% if car_info.fuel_type=='Електрика' %} selected {% endif %}>Електрика
+                     </option>
+                     <option value="Газ" {% if car_info.fuel_type=='Газ' %} selected {% endif %}>Газ</option>
                   </select>
 
                </div>
                <div class="mb-3">
                   <label for="fuel-consumption" class="form-label">Розхід палива на 100 км (л)</label>
-                  <input type="number" class="form-control" id="fuel-consumption" name="fuel_consumption" min="1" value="{{car_info.fuel_limit}}" required>
+                  <input type="number" class="form-control" id="fuel-consumption" name="fuel_consumption" min="1"
+                     value="{{car_info.fuel_limit}}" required>
                </div>
-            <div class="mb-3">
-                  <label for="fuel-consumption" class="form-label">Відстань яку проїжджає працівник (в сумі за день) km.</label>
-                  <input type="number" class="form-control" id="fuel-consumption" name="distance" min="1" value="{{car_info.distance}}" required>
+               <div class="mb-3">
+                  <label for="fuel-consumption" class="form-label">Відстань яку проїжджає працівник (в сумі за день)
+                     km.</label>
+                  <input type="number" class="form-control" id="fuel-consumption" name="distance" min="1"
+                     value="{{car_info.distance}}" required>
                </div>
             </div>
             <div class="modal-footer">
@@ -551,7 +586,8 @@
 
 <!-- /.modal -->
 <!-- Модальне вікно для встановлення робочого графіка -->
-<div id="work-schedule-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="work-schedule-modalLabel" aria-hidden="true">
+<div id="work-schedule-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="work-schedule-modalLabel"
+   aria-hidden="true">
    <div class="modal-dialog">
       <div class="modal-content">
          <div class="modal-header">
@@ -562,7 +598,8 @@
             <form method="post" action="set-work-schedule">
                <div class="mb-3">
                   <label class="form-label">Період задачі графіку</label>
-                  <input type="text" class="form-control date" id="singledaterange" data-toggle="date-picker" data-cancel-class="btn-warning" name="graphic_start">
+                  <input type="text" class="form-control date" id="singledaterange" data-toggle="date-picker"
+                     data-cancel-class="btn-warning" name="graphic_start">
                </div>
                <!-- План годин -->
                <div class="mb-3">
@@ -585,7 +622,8 @@
                <div class="mb-3">
                   <label class="form-label">Спеціальний графік</label>
                   <div class="form-check">
-                     <input class="form-check-input" type="radio" name="days_option" id="first_two_working" value="first_two_working">
+                     <input class="form-check-input" type="radio" name="days_option" id="first_two_working"
+                        value="first_two_working">
                      <label class="form-check-label" for="first_two_working">Спеціальний</label>
                   </div>
                </div>
@@ -608,7 +646,7 @@
          <div class="modal-header">
             <h5 class="modal-title" id="editModalLabel">Редагування відпустки</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true">
-            <span aria-hidden="true">&times;</span>
+               <span aria-hidden="true">&times;</span>
             </button>
          </div>
          <div class="modal-body">
@@ -628,8 +666,8 @@
                <!-- Інші поля форми -->
          </div>
          <div class="modal-footer">
-         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-hidden="true">Закрити</button>
-         <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" aria-hidden="true">Закрити</button>
+            <button type="submit" class="btn btn-primary">Зберегти зміни</button>
          </div>
          </form>
       </div>
@@ -637,146 +675,146 @@
 </div>
 <script>
    var defaultLocaleWeek = {
-       dow: 1, // Понеділок як перший день тижня.
-       doy: 6  // Тиждень, що містить 6 січня, є першим тижнем року.
+      dow: 1, // Понеділок як перший день тижня.
+      doy: 6  // Тиждень, що містить 6 січня, є першим тижнем року.
    };
-   
-   
+
+
    function uploadAvatar(input) {
-       if (input.files && input.files[0]) {
-           var formData = new FormData();
-           formData.append("avatar", input.files[0]);
-           formData.append("user_id", {{user_id}});
-   
-           fetch('/upload-avatar', { // Замініть на шлях до вашого серверного коду обробки
-               method: 'POST',
-               body: formData
-           })
-           .then(response => response.json())
-           .then(data => {
-               // Оновіть зображення аватара на сторінці, якщо завантаження пройшло успішно
-               if (data.success) {
-                   document.querySelector('.avatar-lg img').src = data.newAvatarUrl;
-               }
-           })
-           .catch(error => {
-               console.error('Помилка завантаження аватара:', error);
-           });
-       }
+      if (input.files && input.files[0]) {
+         var formData = new FormData();
+         formData.append("avatar", input.files[0]);
+         formData.append("user_id", {{ user_id }});
+
+      fetch('/upload-avatar', { // Замініть на шлях до вашого серверного коду обробки
+         method: 'POST',
+         body: formData
+      })
+         .then(response => response.json())
+         .then(data => {
+            // Оновіть зображення аватара на сторінці, якщо завантаження пройшло успішно
+            if (data.success) {
+               document.querySelector('.avatar-lg img').src = data.newAvatarUrl;
+            }
+         })
+         .catch(error => {
+            console.error('Помилка завантаження аватара:', error);
+         });
    }
-   
-   
-   
+   }
+
+
+
    let currentIndex = 0;
-   
+
    function addDateField() {
-       var container = document.getElementById('vacation-dates-container');
-       var existingFields = container.querySelectorAll('.date-input');
-       var maxFields = 5; // Максимальна кількість полів
-   
-       // Перевіряємо, чи максимальна кількість полів уже досягнута
-       if (existingFields.length < maxFields) {
-           var newIndex = existingFields.length; // Новий індекс для id та label
-   
-           // Створюємо новий div контейнер для поля
-           var newFieldContainer = document.createElement('div');
-           newFieldContainer.classList.add('mb-3', 'date-input');
-   
-           // Додаємо внутрішній HTML для нового поля
-           newFieldContainer.innerHTML = `<label for="vacation-start-${newIndex}" class="form-label">Період відпустки ${newIndex + 1}</label>
+      var container = document.getElementById('vacation-dates-container');
+      var existingFields = container.querySelectorAll('.date-input');
+      var maxFields = 5; // Максимальна кількість полів
+
+      // Перевіряємо, чи максимальна кількість полів уже досягнута
+      if (existingFields.length < maxFields) {
+         var newIndex = existingFields.length; // Новий індекс для id та label
+
+         // Створюємо новий div контейнер для поля
+         var newFieldContainer = document.createElement('div');
+         newFieldContainer.classList.add('mb-3', 'date-input');
+
+         // Додаємо внутрішній HTML для нового поля
+         newFieldContainer.innerHTML = `<label for="vacation-start-${newIndex}" class="form-label">Період відпустки ${newIndex + 1}</label>
                <input type="text" class="form-control date" id="vacation-start-${newIndex}" data-toggle="date-picker" data-cancel-class="btn-warning" name="vacation_start[]">`;
-   
-           // Додаємо новий контейнер до батьківського контейнера
-           container.appendChild(newFieldContainer);
-   
-           // Опціонально: Ініціалізуємо date-picker для нового поля, якщо потрібно
-           // Припустимо, що ви використовуєте jQuery datepicker
-           // $(newFieldContainer).find('.date').datepicker();
-       } else {
-           alert('Ви не можете додати більше 5 періодів відпустки.');
-       }
+
+         // Додаємо новий контейнер до батьківського контейнера
+         container.appendChild(newFieldContainer);
+
+         // Опціонально: Ініціалізуємо date-picker для нового поля, якщо потрібно
+         // Припустимо, що ви використовуєте jQuery datepicker
+         // $(newFieldContainer).find('.date').datepicker();
+      } else {
+         alert('Ви не можете додати більше 5 періодів відпустки.');
+      }
    }
-   
-   
-   
+
+
+
    function deleteVacation(user_id, startDate, endDate) {
-       if (confirm('Ви впевнені, що хочете видалити відпустку в цьому періоді?')) {
-           fetch(`/delete-vacation?start_date=${startDate}&end_date=${endDate}&user_id=${user_id}`, {
-               method: 'DELETE'
-           })
-           .then(response => response.json())
-           .then(data => {
+      if (confirm('Ви впевнені, що хочете видалити відпустку в цьому періоді?')) {
+         fetch(`/delete-vacation?start_date=${startDate}&end_date=${endDate}&user_id=${user_id}`, {
+            method: 'DELETE'
+         })
+            .then(response => response.json())
+            .then(data => {
                window.location.reload();
-           });
-       }
+            });
+      }
    }
-   
-   
+
+
    function editVacation(vacationId, startDate, endDate, userId, originalStartDate, originalEndDate) {
-       document.getElementById('editVacationId').value = vacationId;
-       document.getElementById('editUserId').value = userId;
-       document.getElementById('editStartDate').value = startDate;
-       document.getElementById('editEndDate').value = endDate;
-       document.getElementById('originalStartDate').value = originalStartDate;
-       document.getElementById('originalEndDate').value = originalEndDate;
-   
-       $('#editModal').modal('show');
+      document.getElementById('editVacationId').value = vacationId;
+      document.getElementById('editUserId').value = userId;
+      document.getElementById('editStartDate').value = startDate;
+      document.getElementById('editEndDate').value = endDate;
+      document.getElementById('originalStartDate').value = originalStartDate;
+      document.getElementById('originalEndDate').value = originalEndDate;
+
+      $('#editModal').modal('show');
    }
-   
-   
-   
+
+
+
    // Отримати всі елементи <i> з класом 'mdi mdi-delete'
    var deleteIcons = document.querySelectorAll('.mdi.mdi-delete');
-   
+
    // Додати обробник подій на кожну кнопку <i>
-   deleteIcons.forEach(function(icon) {
-       icon.addEventListener('click', function() {
-           var headId = icon.parentElement.getAttribute('data-headid');
-           var profileId = icon.parentElement.getAttribute('data-profileid');
-           
-           // Отримати дані для відправки на сервер
-           var requestData = {
-               head_id: headId,
-               profile_id: profileId
-           };
-   
-           // Відправити запит до API
-           fetch('api/delete-head', {
-               method: 'POST',
-               headers: {
-                   'Content-Type': 'application/json'
-               },
-               body: JSON.stringify(requestData)
-           })
-           .then(response => response.json())
-           .then(data => {
+   deleteIcons.forEach(function (icon) {
+      icon.addEventListener('click', function () {
+         var headId = icon.parentElement.getAttribute('data-headid');
+         var profileId = icon.parentElement.getAttribute('data-profileid');
+
+         // Отримати дані для відправки на сервер
+         var requestData = {
+            head_id: headId,
+            profile_id: profileId
+         };
+
+         // Відправити запит до API
+         fetch('api/delete-head', {
+            method: 'POST',
+            headers: {
+               'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+         })
+            .then(response => response.json())
+            .then(data => {
                // Обробка відповіді від сервера, якщо потрібно
                console.log(data);
-           })
-           .catch(error => {
+            })
+            .catch(error => {
                // Обробка помилок, якщо вони виникли під час виконання запиту
                console.error('Помилка:', error);
-           });
-       });
+            });
+      });
    });
-   
-   document.addEventListener('DOMContentLoaded', function() {
-       var deleteIcons = document.querySelectorAll('.deleteIcon');
-   
-       deleteIcons.forEach(function(icon) {
-           icon.addEventListener('click', function() {
-               var leaderItem = icon.closest('.leaderItem');  // Знайти батьківський елемент .leaderItem
-               leaderItem.remove();  // Видалити елемент
-           });
-       });
+
+   document.addEventListener('DOMContentLoaded', function () {
+      var deleteIcons = document.querySelectorAll('.deleteIcon');
+
+      deleteIcons.forEach(function (icon) {
+         icon.addEventListener('click', function () {
+            var leaderItem = icon.closest('.leaderItem');  // Знайти батьківський елемент .leaderItem
+            leaderItem.remove();  // Видалити елемент
+         });
+      });
    });
-   
-   
+
+
    // Ініціалізація tooltips
    $(function () {
-       $('[data-bs-toggle="tooltip"]').tooltip();
+      $('[data-bs-toggle="tooltip"]').tooltip();
    });
-   
-   
+
+
 </script>
 {% include 'base/footer.html' %}

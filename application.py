@@ -4,7 +4,7 @@ import os
 
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://localuser_42:K7mPqR9xL2vWnT5jB8sD@46.225.170.124/webtime_db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://localuser_42:K7mPqR9xL2vWnT5jB8sD@46.225.170.124/tabel_odessa"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 #app.config.from_object(Configuration)
 

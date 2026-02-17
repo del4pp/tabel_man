@@ -951,7 +951,7 @@ def download_fuel_report(month, year):
 
     # Заголовок
     header_title = f"Облік витрат пального по паливним карткам - {month_name} {year}"
-    subtitle = "Дніпро-Скан-Сервіс"
+    subtitle = "Дніпро-Сервіс"
     elements.append(Paragraph(header_title, title_style))
     elements.append(Paragraph(subtitle, subtitle_style))
 
@@ -2083,7 +2083,7 @@ def company_fuel():
             'transactions': transactions_data
         })
 
-    dss_cars = [car for car in car_data if car['company_name'] == 'Дніпро-Скан-Сервіс']
+    dss_cars = [car for car in car_data if car['company_name'] == 'ДНІПРО-СЕРВІС']
     tf_cars = [car for car in car_data if car['company_name'] == 'ТФ']
 
     selected_date = last_day_of_month if (
@@ -2511,7 +2511,7 @@ def company_fuel_pdf():
                 'company_name': car.company_name
             })
 
-        dss_cars = [car for car in car_data if car['company_name'] == 'Дніпро-Скан-Сервіс']
+        dss_cars = [car for car in car_data if car['company_name'] == 'ДНІПРО-СЕРВІС']
         tf_cars = [car for car in car_data if car['company_name'] == 'ТФ']
 
         table_headers = [
@@ -2536,7 +2536,7 @@ def company_fuel_pdf():
         footer_color = colors.HexColor('#d3d3d3')
 
         if dss_cars:
-            elements.append(Paragraph("Дніпро-Скан-Сервіс", subtitle_style))
+            elements.append(Paragraph("ДНІПРО-СЕРВІС", subtitle_style))
             elements.append(Spacer(1, 6))
             dss_table_data = [table_headers]
             total_cost_dss = 0

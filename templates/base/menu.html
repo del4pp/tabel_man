@@ -1,92 +1,102 @@
 <div class="topnav shadow-sm">
-    <div>
-        <nav class="navbar navbar-light navbar-expand-lg topnav-menu" style="padding-left: 1.5rem;">
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav">
+    <div class="container-fluid" style="padding-left: 15px; margin-left: 0; max-width: 100%;">
+        <nav class="navbar navbar-light navbar-expand-lg topnav-menu"
+            style="padding-left: 0; margin-left: 0; width: 100%; max-width: 100%;">
+            <div class="collapse navbar-collapse" style="flex-grow: 1; width: 100%;">
+                <ul class="navbar-nav"
+                    style="margin-left: 0; padding-left: 0; width: 100%; justify-content: flex-start;">
                     <li class="nav-item">
-                        <a class="nav-link" href="calendar" id="topnav-dashboards" role="button" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link" href="calendar" id="topnav-dashboards" role="button" aria-haspopup="true"
+                            aria-expanded="false">
                             <i class="fas fa-calendar-alt me-1"></i>Календар
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="users" id="topnav-dashboards" role="button" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link" href="users" id="topnav-dashboards" role="button" aria-haspopup="true"
+                            aria-expanded="false">
                             <i class="fas fa-users me-1"></i>Користувачі
                         </a>
                     </li>
                     {% if user_info.user_access == 1 %}
                     <li class="nav-item">
-                        <a class="nav-link" href="departaments" id="topnav-dashboards" role="button" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link" href="departaments" id="topnav-dashboards" role="button"
+                            aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-building me-1"></i>Відділи
                         </a>
                     </li>
                     {% endif %}
 
                     {% if vacation_report_access %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="vacationDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-umbrella-beach me-1"></i>Звіти відпусток
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="vacationDropdown">
-                                <li>
-                                    <a class="dropdown-item" target="_blank" href="vacation-report">
-                                        <i class="fas fa-file-pdf me-1"></i>Звіт відпусток
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li class="dropdown-header">Перетин відпусток</li>
-                                <li>
-                                    <a class="dropdown-item" target="_blank" href="#" id="vacationConflictPrevYear">
-                                        <i class="fas fa-calendar-minus me-1"></i><span id="prevYear"></span> рік
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" target="_blank" href="#" id="vacationConflictCurrentYear">
-                                        <i class="fas fa-calendar-check me-1"></i><span id="currentYear"></span> рік
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" target="_blank" href="#" id="vacationConflictNextYear">
-                                        <i class="fas fa-calendar-plus me-1"></i><span id="nextYear"></span> рік
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="vacationDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-umbrella-beach me-1"></i>Звіти відпусток
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="vacationDropdown">
+                            <li>
+                                <a class="dropdown-item" target="_blank" href="vacation-report">
+                                    <i class="fas fa-file-pdf me-1"></i>Звіт відпусток
+                                </a>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li class="dropdown-header">Перетин відпусток</li>
+                            <li>
+                                <a class="dropdown-item" target="_blank" href="#" id="vacationConflictPrevYear">
+                                    <i class="fas fa-calendar-minus me-1"></i><span id="prevYear"></span> рік
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" target="_blank" href="#" id="vacationConflictCurrentYear">
+                                    <i class="fas fa-calendar-check me-1"></i><span id="currentYear"></span> рік
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" target="_blank" href="#" id="vacationConflictNextYear">
+                                    <i class="fas fa-calendar-plus me-1"></i><span id="nextYear"></span> рік
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     {% endif %}
 
                     <!-- Оновлена вкладка "Автомобілі" з новою іконкою -->
                     {% if user_info.id in [11, 78, 84] %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="carsDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-truck-pickup me-1"></i>Автомобілі
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="carsDropdown">
-                                {% if user_info.id in [11] %}
-                                <li>
-                                    <a class="dropdown-item" href="fuel-users">
-                                        <i class="fas fa-users me-1"></i>Автомобілі працівників
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="company-cars">
-                                        <i class="fas fa-truck me-1"></i>Автомобілі компанії
-                                    </a>
-                                </li>
-                                {% endif %}
-                                {% if user_info.id in [11, 78, 84] %}
-                                <li>
-                                    <a class="dropdown-item" href="company-autopark">
-                                        <i class="fa-solid fa-bus me-1"></i>Автопарк
-                                    </a>
-                                </li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="carsDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-truck-pickup me-1"></i>Автомобілі
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="carsDropdown">
+                            {% if user_info.id in [11] %}
+                            <li>
+                                <a class="dropdown-item" href="fuel-users">
+                                    <i class="fas fa-users me-1"></i>Автомобілі працівників
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="company-cars">
+                                    <i class="fas fa-truck me-1"></i>Автомобілі компанії
+                                </a>
+                            </li>
+                            {% endif %}
+                            {% if user_info.id in [11, 78, 84] %}
+                            <li>
+                                <a class="dropdown-item" href="company-autopark">
+                                    <i class="fa-solid fa-bus me-1"></i>Автопарк
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
 
                     <!-- Випадаючий список "Паливо" -->
                     {% if user_info.id in [11, 78, 84, 73, 149, 87, 72, 74] %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="fuelDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle" href="#" id="fuelDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-gas-pump me-1"></i>Паливо
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="fuelDropdown">
@@ -132,30 +142,33 @@
                     <!-- Новий пункт "Нова Пошта" для користувача з id 11 -->
                     {% if user_info.id in [11, 78, 84, 87, 149] %}
                     <li class="nav-item">
-                        <a class="nav-link" href="nova-poshta-parcels" id="topnav-dashboards" role="button" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link" href="nova-poshta-parcels" id="topnav-dashboards" role="button"
+                            aria-haspopup="true" aria-expanded="false">
                             <i class="fas fa-box me-1"></i>Нова Пошта
                         </a>
                     </li>
                     {% endif %}
 
                     {% if user_info.id in [11, 99, 78, 114, 108, 103, 101, 94, 87, 149, 85, 120, 123, 73, 74, 72] %}
-<li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="/bank-transactions" id="topnav-bank-payments" role="button" aria-haspopup="true" aria-expanded="false">
-        <i class="fas fa-money-check-alt"></i> Банківські платежі
-    </a>
-    {% if user_info.id in [11, 78, 73, 72] %}
-    <div class="dropdown-menu" aria-labelledby="topnav-bank-payments">
-        <a class="dropdown-item" href="/bank-expenses">
-            <i class="fa-solid fa-money-bill"></i> Витрати
-        </a>
-    </div>
-    {% endif %}
-</li>
-{% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="/bank-transactions" id="topnav-bank-payments"
+                            role="button" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-money-check-alt"></i> Банківські платежі
+                        </a>
+                        {% if user_info.id in [11, 78, 73, 72] %}
+                        <div class="dropdown-menu" aria-labelledby="topnav-bank-payments">
+                            <a class="dropdown-item" href="/bank-expenses">
+                                <i class="fa-solid fa-money-bill"></i> Витрати
+                            </a>
+                        </div>
+                        {% endif %}
+                    </li>
+                    {% endif %}
 
                     {% if user_info.id == 11 %}
                     <li class="nav-item">
-                        <a class="nav-link" href="settings" id="topnav-dashboards" role="button" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link" href="settings" id="topnav-dashboards" role="button" aria-haspopup="true"
+                            aria-expanded="false">
                             <i class="fas fa-tools me-1"></i>Налаштування
                         </a>
                     </li>

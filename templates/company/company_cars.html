@@ -4,7 +4,8 @@
         <div class="col-12">
             <div class="page-title-box">
                 <div class="page-title-right">
-                    <button type="button" class="btn btn-success text-white" data-bs-toggle="modal" data-bs-target="#addCarModal">
+                    <button type="button" class="btn btn-success text-white" data-bs-toggle="modal"
+                        data-bs-target="#addCarModal">
                         <i class="fas fa-plus me-1"></i> Додати автомобіль
                     </button>
                 </div>
@@ -27,7 +28,8 @@
                         <strong>Норма палива:</strong> {{ car.fuel_norm }} л/100 км<br>
                         <strong>Початковий пробіг:</strong> {{ car.initial_mileage or 0 }} км<br>
                         <strong>Початковий залишок палива:</strong> {{ car.initial_fuel_balance or 0 }} л<br>
-                        <strong>Дата створення:</strong> {{ car.created_at.strftime('%d-%m-%Y') if car.created_at else 'Не вказано' }}<br> <!-- Нове поле -->
+                        <strong>Дата створення:</strong> {{ car.created_at.strftime('%d-%m-%Y') if car.created_at else
+                        'Не вказано' }}<br> <!-- Нове поле -->
                         <!--
                         <strong>Держ. страхова компанія:</strong> {{ car.public_company }}<br> 
                         <strong>КАСКО страхова компанія:</strong> {{ car.kasko_company }}<br> 
@@ -35,7 +37,8 @@
                         -->
                     </p>
                     <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('company_car_profile', car_id=car.id) }}" class="btn btn-primary btn-sm">Детальніше</a>
+                        <a href="{{ url_for('company_car_profile', car_id=car.id) }}"
+                            class="btn btn-primary btn-sm">Детальніше</a>
                         <button class="btn btn-danger btn-sm delete-car" data-car-id="{{ car.id }}">Видалити</button>
                     </div>
                 </div>
@@ -46,7 +49,8 @@
 </div>
 
 <!-- Modal для додавання автомобіля -->
-<div class="modal fade" id="addCarModal" tabindex="-1" role="dialog" aria-labelledby="addCarModalLabel" aria-hidden="true">
+<div class="modal fade" id="addCarModal" tabindex="-1" role="dialog" aria-labelledby="addCarModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -66,10 +70,10 @@
                     <div class="mb-3">
                         <label for="company-name" class="form-label">Компанія</label>
                         <select class="form-select" id="company-name" name="company_name" required>
-                            <option value="Дніпро-Скан-Сервіс">Дніпро-Скан-Сервіс</option>
+                            <option value="ДНІПРО-СЕРВІС">ДНІПРО-СЕРВІС</option>
                             <option value="ТФ">ТФ</option>
                         </select>
-                    </div>                    
+                    </div>
                     <div class="mb-3">
                         <label for="location" class="form-label">За ким закріплена</label>
                         <input type="text" id="location" name="location" class="form-control" required>
@@ -85,7 +89,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="fuel-norm" class="form-label">Норма палива (л/100 км)</label>
-                        <input type="number" id="fuel-norm" name="fuel_norm" class="form-control" step="0.1" min="0" required>
+                        <input type="number" id="fuel-norm" name="fuel_norm" class="form-control" step="0.1" min="0"
+                            required>
                     </div>
                     <div class="mb-3">
                         <label for="tank-volume" class="form-label">Об’єм бака (л)</label>
@@ -93,11 +98,13 @@
                     </div>
                     <div class="mb-3">
                         <label for="initial-mileage" class="form-label">Початковий пробіг (км)</label>
-                        <input type="number" id="initial-mileage" name="initial_mileage" class="form-control" step="1" min="0">
+                        <input type="number" id="initial-mileage" name="initial_mileage" class="form-control" step="1"
+                            min="0">
                     </div>
                     <div class="mb-3">
                         <label for="initial-fuel-balance" class="form-label">Початковий залишок палива (л)</label>
-                        <input type="number" id="initial-fuel-balance" name="initial_fuel_balance" class="form-control" step="0.1" min="0">
+                        <input type="number" id="initial-fuel-balance" name="initial_fuel_balance" class="form-control"
+                            step="0.1" min="0">
                     </div>
                     <div class="mb-3">
                         <label for="created-at" class="form-label">Дата створення</label>
@@ -133,63 +140,63 @@
 
 <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
 <script>
-$(document).ready(function() {
-    // Додавання автомобіля
-    $('#addCarForm').submit(function(e) {
-        e.preventDefault();
-        const formData = {
-            car_number: $('#car-number').val(),
-            car_name: $('#car-name').val(),
-            company_name: $('#company-name').val(),
-            location: $('#location').val(),
-            fuel_type: $('#fuel-type').val(),
-            fuel_norm: $('#fuel-norm').val(),
-            tank_volume: $('#tank-volume').val() || null,
-            initial_mileage: $('#initial-mileage').val() || null,
-            initial_fuel_balance: $('#initial-fuel-balance').val() || null,
-            created_at: $('#created-at').val() || null, // Нове поле
-            public_company: $('#public-company').val(), // Нове поле
-            kasko_company: $('#kasko-company').val(), // Нове поле
-            plan_to: $('#plan-to').val() || null, // Нове поле
-            public_insurance: $('#public-insurance').val() || null,
-            kasko_insurance: $('#kasko-insurance').val() || null
-        };
-        $.ajax({
-            url: '/company-cars/add',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(formData),
-            success: function(response) {
-                $('#addCarModal').modal('hide');
-                $('#addCarForm')[0].reset();
-                alert('Автомобіль додано!');
-                window.location.reload();
-            },
-            error: function(xhr) {
-                console.error('Помилка при додаванні:', xhr.responseText);
-                alert('Помилка: ' + xhr.responseText);
-            }
-        });
-    });
-
-    // Видалення автомобіля
-    $('.delete-car').on('click', function() {
-        const carId = $(this).data('car-id');
-        if (confirm('Ви впевнені, що хочете видалити цей автомобіль?')) {
+    $(document).ready(function () {
+        // Додавання автомобіля
+        $('#addCarForm').submit(function (e) {
+            e.preventDefault();
+            const formData = {
+                car_number: $('#car-number').val(),
+                car_name: $('#car-name').val(),
+                company_name: $('#company-name').val(),
+                location: $('#location').val(),
+                fuel_type: $('#fuel-type').val(),
+                fuel_norm: $('#fuel-norm').val(),
+                tank_volume: $('#tank-volume').val() || null,
+                initial_mileage: $('#initial-mileage').val() || null,
+                initial_fuel_balance: $('#initial-fuel-balance').val() || null,
+                created_at: $('#created-at').val() || null, // Нове поле
+                public_company: $('#public-company').val(), // Нове поле
+                kasko_company: $('#kasko-company').val(), // Нове поле
+                plan_to: $('#plan-to').val() || null, // Нове поле
+                public_insurance: $('#public-insurance').val() || null,
+                kasko_insurance: $('#kasko-insurance').val() || null
+            };
             $.ajax({
-                url: `/company-cars/delete/${carId}`,
-                type: 'DELETE',
-                success: function(response) {
-                    alert('Автомобіль видалено!');
+                url: '/company-cars/add',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    $('#addCarModal').modal('hide');
+                    $('#addCarForm')[0].reset();
+                    alert('Автомобіль додано!');
                     window.location.reload();
                 },
-                error: function(xhr) {
-                    console.error('Помилка при видаленні:', xhr.responseText);
+                error: function (xhr) {
+                    console.error('Помилка при додаванні:', xhr.responseText);
                     alert('Помилка: ' + xhr.responseText);
                 }
             });
-        }
+        });
+
+        // Видалення автомобіля
+        $('.delete-car').on('click', function () {
+            const carId = $(this).data('car-id');
+            if (confirm('Ви впевнені, що хочете видалити цей автомобіль?')) {
+                $.ajax({
+                    url: `/company-cars/delete/${carId}`,
+                    type: 'DELETE',
+                    success: function (response) {
+                        alert('Автомобіль видалено!');
+                        window.location.reload();
+                    },
+                    error: function (xhr) {
+                        console.error('Помилка при видаленні:', xhr.responseText);
+                        alert('Помилка: ' + xhr.responseText);
+                    }
+                });
+            }
+        });
     });
-});
 </script>
 {% include 'base/footer.html' %}

@@ -1,21 +1,21 @@
 <!-- Footer Start -->
-    <footer class="footer">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-6">
-                    <script>document.write(new Date().getFullYear())</script> ©
-                </div>
-                <div class="col-md-6">
-                    <div class="text-md-end footer-links d-none d-md-block">
-                        <a href="javascript: void(0);">About</a>
-                        <a href="javascript: void(0);">Support</a>
-                        <a href="javascript: void(0);">Contact Us</a>
-                    </div>
+<footer class="footer">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <script>document.write(new Date().getFullYear())</script> ©
+            </div>
+            <div class="col-md-6">
+                <div class="text-md-end footer-links d-none d-md-block">
+                    <a href="javascript: void(0);">About</a>
+                    <a href="javascript: void(0);">Support</a>
+                    <a href="javascript: void(0);">Contact Us</a>
                 </div>
             </div>
         </div>
-    </footer>
-    <!-- end Footer -->
+    </div>
+</footer>
+<!-- end Footer -->
 
 </div>
 
@@ -35,54 +35,59 @@
 
 
 <script>
-$(document).ready(function() {
-    // Обробник для кнопки закриття
-    $("#cellModal .close").click(function() {
-        $("#cellModal").modal('hide');
+    $(document).ready(function () {
+        // Обробник для кнопки закриття
+        $("#cellModal .close").click(function () {
+            $("#cellModal").modal('hide');
+        });
+
+        // Обробник для кнопки "Відмінити"
+        $("#cellModal .btn-secondary").click(function () {
+            $("#cellModal").modal('hide');
+        });
     });
 
-    // Обробник для кнопки "Відмінити"
-    $("#cellModal .btn-secondary").click(function() {
-        $("#cellModal").modal('hide');
-    });
-});
 
-
-// Функція для показу спінера
-function showSpinner() {
-    document.querySelector('.loading-overlay').classList.add('active');
-}
-
-// Функція для приховування спінера
-function hideSpinner() {
-    document.querySelector('.loading-overlay').classList.remove('active');
-}
-
-// Показуємо спінер при початковому завантаженні
-showSpinner();
-
-// Приховуємо спінер, коли сторінка повністю завантажена
-window.addEventListener('load', function() {
-    hideSpinner();
-});
-
-// Показуємо спінер перед оновленням сторінки
-window.addEventListener('beforeunload', function() {
-    showSpinner();
-});
-
-// Виправляємо проблему з "вічним лоадером" при поверненні назад (bfcache)
-window.addEventListener('pageshow', function(event) {
-    if (event.persisted) {
-        hideSpinner();
+    // Функція для показу спінера
+    function showSpinner() {
+        document.querySelector('.loading-overlay').classList.add('active');
     }
-});
+
+    // Функція для приховування спінера
+    function hideSpinner() {
+        document.querySelector('.loading-overlay').classList.remove('active');
+    }
+
+    // Показуємо спінер при початковому завантаженні
+    showSpinner();
+
+    // Приховуємо спінер, коли сторінка повністю завантажена
+    window.addEventListener('load', function () {
+        hideSpinner();
+    });
+
+    // Запобіжний таймер: приховуємо спінер через 3 секунди в будь-якому випадку
+    setTimeout(function () {
+        hideSpinner();
+    }, 3000);
+
+    // Показуємо спінер перед оновленням сторінки
+    window.addEventListener('beforeunload', function () {
+        showSpinner();
+    });
+
+    // Виправляємо проблему з "вічним лоадером" при поверненні назад (bfcache)
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            hideSpinner();
+        }
+    });
 </script>
 
 
 <script>
     // Автоматичне визначення років та встановлення посилань
-    (function() {
+    (function () {
         const currentYear = new Date().getFullYear();
         const prevYear = currentYear - 1;
         const nextYear = currentYear + 1;
@@ -106,5 +111,6 @@ window.addEventListener('pageshow', function(event) {
         if (nextYearLink) nextYearLink.href = 'vacation-conflicts/' + nextYear;
     })();
 </script>
-    </body>
+</body>
+
 </html>
