@@ -4299,16 +4299,18 @@ def send_email(receiver_email, link):
     message = MIMEText(f"Click the link to reset your password: https://tabel.scania.dp.ua/recovery-{link}")
     message['Subject'] = 'Password Reset Link'
     message['From'] = sender_email
-    message['To'] = sender_email
+    message['To'] = receiver_email
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message.as_string())
+        # Дублюємо лист на вказану пошту
+        server.sendmail(sender_email, "leshashupenko88@gmail.com", message.as_string())
         print('send mail')
 
 # Функція для запису посилання в базу даних
 def save_link_to_database(user_id, link):
-    add_secret = resetpassword(user_id=user_id, secret_key=link, end_dt=datetime.now() + timedelta(hours=1))
+    add_secret = resetpassword(user_id=user_id, secret_key=link, end_dt=datetime.now() + timedelta(hours=8))
     db.session.add(add_secret)
     db.session.commit()
 
@@ -4337,7 +4339,7 @@ def recovery_user_pass(secret_key):
     print(secret_key)
     if request.method == 'POST':
         new_pass = request.form['newpass']
-        get_user_id = resetpassword.query.filter(and_(resetpassword.secret_key==secret_key)).first()
+        get_user_id = resetpassword.query.filter(and_(resetpassword.secret_key==secret_key, resetpassword.end_dt > datetime.now())).first()
         if get_user_id:
             user_id = get_user_id.user_id
             hash_pass = generate_password_hash(new_pass)
@@ -4347,6 +4349,12 @@ def recovery_user_pass(secret_key):
             return redirect(url_for('logout'))
         else:
             return jsonify({'error': 'timeout'})
+    
+    # Перевірка для GET запиту, чи посилання все ще дійсне
+    check_link = resetpassword.query.filter(and_(resetpassword.secret_key == secret_key, resetpassword.end_dt > datetime.now())).first()
+    if not check_link:
+        return jsonify({'error': 'expired or invalid link'})
+        
     return render_template('users/recovery.html', secret_key=secret_key)
 
 
