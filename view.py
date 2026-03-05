@@ -4296,7 +4296,7 @@ def send_email(receiver_email, link):
     sender_email = "leshashupenko@gmail.com"
     password = "jivl tpaf gbtg mfiz"
 
-    message = MIMEText(f"Click the link to reset your password: https://tabel.scania.dp.ua/recovery-{link}")
+    message = MIMEText(f"Click the link to reset your password: http://46.255.70.124:8000/recovery-{link}")
     message['Subject'] = 'Password Reset Link'
     message['From'] = sender_email
     message['To'] = receiver_email
