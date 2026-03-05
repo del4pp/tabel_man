@@ -9,6 +9,33 @@
     #basic-datatable_filter {
         display: none !important;
     }
+
+    /* Робимо години та іконки в табелі максимально чорними та жирними */
+    .clickable-cell {
+        color: #000 !important;
+        font-weight: 900 !important;
+    }
+
+    .clickable-cell .bottom-icon i,
+    .clickable-cell .bottom-icon-comment i,
+    .clickable-cell .top-right,
+    .clickable-cell .top-icon-comment i,
+    .clickable-cell .transport-icon i {
+        color: #000 !important;
+        font-weight: 900 !important;
+        -webkit-text-stroke: 0.5px #000;
+        /* Додаткова жирність для іконок */
+    }
+
+    /* Виняток для білого тексту на специфічних фонах, якщо такі будуть потрібні */
+    .clickable-cell.white-text {
+        color: #fff !important;
+    }
+
+    .clickable-cell.white-text i {
+        color: #fff !important;
+        -webkit-text-stroke: 0.5px #fff;
+    }
 </style>
 
 <!-- Start Content-->
@@ -120,13 +147,16 @@
                                         {% endfor %}
                                         <td
                                             class="clickable-cell  {{ ' ' if special_class else leader_change_class }} {{ special_class }}">
-                                            <b>{{user.count_day_in_work}}</b></td>
+                                            <b>{{user.count_day_in_work}}</b>
+                                        </td>
                                         <td
                                             class="clickable-cell  {{ ' ' if special_class else leader_change_class }} {{ special_class }}">
-                                            <b>{{user.plan_work}}</b></td>
+                                            <b>{{user.plan_work}}</b>
+                                        </td>
                                         <td
                                             class="clickable-cell  {{ ' ' if special_class else leader_change_class }} {{ special_class }}">
-                                            <b>{{user.fact_work}}</b></td>
+                                            <b>{{user.fact_work}}</b>
+                                        </td>
                                         <td class="clickable-cell  {{ ' ' if special_class else leader_change_class }} {{ special_class }} {% if user.diff_work > 0 %}positive-value{% elif user.diff_work < 0 %}negative-value{% else %}default-value{% endif %}"
                                             style="color:#000;">{{ user.diff_work }}</td>
                                     </tr>
