@@ -138,16 +138,6 @@
                         </ul>
                     </li>
                     {% endif %}
-                    
-                    <!-- Фін звіт -->
-                    {% if user_info.id in [11, 78, 84, 73, 72, 74, 44] %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="salary-report" id="topnav-dashboards" role="button"
-                            aria-haspopup="true" aria-expanded="false">
-                            <i class="fas fa-file-invoice-dollar me-1"></i>Фін звіт
-                        </a>
-                    </li>
-                    {% endif %}
 
                     <!-- Новий пункт "Нова Пошта" для користувача з id 11 -->
                     {% if user_info.id in [11, 78, 84, 87, 149] %}
