@@ -26,6 +26,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 # db.init_app(app)
 
 with app.app_context():
+    import model
     db.create_all()
 
 def allowed_file(filename):
