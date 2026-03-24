@@ -1226,6 +1226,10 @@ class Users:
     def get_user_info(self):
         get_user = users.query.filter_by(id=self.user_id).first()
         departament_info = departaments.query.filter_by(id=get_user.user_departament).first()
+        # Salary settings access
+        salary_cfg = user_salary_settings.query.filter_by(user_id=get_user.id).first()
+        can_view_report = bool(salary_cfg.can_view_report) if salary_cfg else False
+
         user_info = {
             'id': get_user.id,
             'email': get_user.user_email,
@@ -1242,13 +1246,18 @@ class Users:
             'company_name': get_user.company,
             'company_str_name': company_list.query.filter_by(id=get_user.company).first().company_name,
             'gender': get_user.gender,
-            'user_age': 23#datetime.now() - get_user.birthdate
+            'user_age': 23,
+            'can_view_report': can_view_report
         }
         return user_info
 
     def get_user_info_from_id(self, user_id):
         get_user = users.query.filter_by(id=user_id).first()
         departament_info = departaments.query.filter_by(id=get_user.user_departament).first()
+        # Salary settings access
+        salary_cfg = user_salary_settings.query.filter_by(user_id=get_user.id).first()
+        can_view_report = bool(salary_cfg.can_view_report) if salary_cfg else False
+
         user_info = {
             'id': get_user.id,
             'email': get_user.user_email,
@@ -1263,7 +1272,8 @@ class Users:
             'join_date': get_user.join_date.strftime('%Y-%m-%d') if get_user.join_date else None,
             'company_name': get_user.company,
             'gender': get_user.gender,
-            'user_age': 23#datetime.now() - get_user.birthdate
+            'user_age': 23,
+            'can_view_report': can_view_report
         }
         return user_info
 
@@ -1523,22 +1533,31 @@ class Users:
 
         info_list = []
         for user in tqdm(get_user_list):
-            count_work_day = calendar_work.query.filter(and_(calendar_work.user_id == user.id,
-                                                             calendar_work.today_date >= date_start,
-                                                             calendar_work.today_date <= date_end,
-                                                             calendar_work.work_fact>0)).count()
-            if count_work_day != 0:
+                # Cap metrics at today for the calendar view
+                today_max = datetime.combine(datetime.now().date(), datetime.max.time())
+                effective_end_cal = min(date_end, today_max)
+
+                count_work_day = calendar_work.query.filter(and_(calendar_work.user_id == user.id,
+                                                                 calendar_work.today_date >= date_start,
+                                                                 calendar_work.today_date <= effective_end_cal,
+                                                                 calendar_work.work_fact > 0)).count()
+
+                if count_work_day == 0:
+                    continue
 
                 departament_name = departaments.query.filter_by(id=user.user_departament).first()
                 check_user_in_remove = absens_from_work.query.filter_by(user_id=user.id).first()
 
-                plan_hours, fact_hours = db.session.query(
-                    func.sum(calendar_work.work_time),
-                    func.sum(calendar_work.work_fact)
-                ).filter(
+                # Fetch plan for the WHOLE month, but fact only up to today
+                plan_hours = db.session.query(func.sum(calendar_work.work_time)).filter(
                     calendar_work.user_id == user.id,
                     calendar_work.today_date.between(date_start, date_end)
-                ).first()
+                ).scalar() or 0
+
+                fact_hours = db.session.query(func.sum(calendar_work.work_fact)).filter(
+                    calendar_work.user_id == user.id,
+                    calendar_work.today_date.between(date_start, effective_end_cal)
+                ).scalar() or 0
 
                 if fact_hours is None:
                     fact_hours = 0
@@ -1612,6 +1631,13 @@ class Users:
                     work_comments.user_id == user.id
                 ).order_by(work_comments.id.desc()).all()
 
+                # Get training records for the month
+                training_days = db.session.query(training_records.date, training_records.hours).filter(
+                    training_records.user_id == user.id,
+                    training_records.date.between(date_start, date_end)
+                ).all()
+                training_dict = {td.date.strftime('%Y-%m-%d'): td.hours for td in training_days}
+
                 # Створюємо список коментарів у вигляді словників
                 comments_list = [
                     {
@@ -1650,6 +1676,7 @@ class Users:
                             'reason': specific_entry['reason'] if specific_entry['reason'] else None,
                             'weekend': 0,
                             'comment': all_comments,
+                            'training_hours': training_dict.get(current_date_str, 0),
                             'remove': check_user_in_remove,
                             'date_remove': check_user_in_remove.date_remove if check_user_in_remove else False,
                             'comm_remove': check_user_in_remove.remove_reason if check_user_in_remove else False
@@ -1666,6 +1693,7 @@ class Users:
                             'reason': None,
                             'weekend': 1,
                             'comment': 'Коментарів немає',
+                            'training_hours': training_dict.get(current_date_str, 0),
                             'remove': check_user_in_remove,
                             'date_remove': check_user_in_remove.date_remove if check_user_in_remove else False,
                             'comm_remove': check_user_in_remove.remove_reason if check_user_in_remove else False
@@ -1679,7 +1707,190 @@ class Users:
         users_info = sorted(info_list, key=lambda x: (x['sort'], x['num_in_list']))
         return users_info
 
+    def get_salary_report_info(self, user_id, date_start, date_end):
+        from datetime import timedelta
+        get_user_departaments = users_departament.query.filter(users_departament.user_id == user_id,
+                                                              users_departament.access_level >= 1).all()
+        dep_id_list = [ud.dep_id for ud in get_user_departaments]
 
+        if user_id != 11:
+            get_user_list = users.query.filter(users.user_departament.in_(dep_id_list), users.display == 1).all()
+        else:
+            get_user_list = users.query.filter_by(display=1).all()
+
+        # Розраховуємо загальну кількість робочих днів у місяці (Пн-Пт)
+        month_working_days = 0
+        tmp_d = date_start
+        while tmp_d <= date_end:
+            if tmp_d.weekday() < 5:
+                month_working_days += 1
+            tmp_d += timedelta(days=1)
+
+        info_list = []
+        for user in tqdm(get_user_list):
+            # Calculate effective end date for 'days of presence' (cannot be in the future)
+            today_max = datetime.combine(datetime.now().date(), datetime.max.time())
+            effective_end = min(date_end, today_max)
+            
+            count_work_day = calendar_work.query.filter(and_(calendar_work.user_id == user.id,
+                                                             calendar_work.today_date.between(date_start, effective_end),
+                                                             calendar_work.work_fact >= 1)).count() or 0
+            
+            departament_name = departaments.query.filter_by(id=user.user_departament).first()
+            if not departament_name:
+                continue
+
+            salary_settings = user_salary_settings.query.filter_by(user_id=user.id).first()
+            
+            # Skip if no settings OR (department is Administrators AND not explicitly in report)
+            # OR (not in report AND not a student)
+            if not salary_settings:
+                continue
+            
+            is_admin_dep = (departament_name.dep_name == 'Адміністратори')
+            if is_admin_dep and not salary_settings.in_salary_report:
+                continue
+                
+            if not salary_settings.in_salary_report and not salary_settings.is_student:
+                continue
+
+            if departament_name.dep_name == 'Студенти':
+                salary_settings.is_student = True
+
+            calendar_entries = calendar_work.query.filter(
+                calendar_work.user_id == user.id,
+                calendar_work.today_date.between(date_start, date_end)
+            ).all()
+
+            plan_hours = 0.0
+            fact_hours = 0.0
+            for entry in calendar_entries:
+                plan_hours += (entry.work_time or 0.0)
+                # Sum fact hours ONLY up to today
+                if entry.today_date <= effective_end.date():
+                    fact_hours += (entry.work_fact or 0.0)
+
+            sick_days_no_cert = 0
+            sick_days_with_cert = 0
+            vacation_days = 0
+            vidgul_days = 0
+            training_days = 0
+            sick_plan_no_cert = 0
+            sick_plan_with_cert = 0
+            vacation_plan = 0
+            vidgul_plan = 0
+            training_plan = 0
+
+            for entry in calendar_entries:
+                entry_plan = entry.work_time or 0.0
+                if entry.reason == 'dripicons-medical':
+                    sick_days_no_cert += 1
+                    sick_plan_no_cert += entry_plan
+                elif entry.reason == 'dripicons-pulse':
+                    sick_days_with_cert += 1
+                    sick_plan_with_cert += entry_plan
+                elif entry.reason in ['vacation', 'dripicons-gaming']:
+                    vacation_days += 1
+                    vacation_plan += entry_plan
+                elif entry.reason in ['dripicons-flag', 'dripicons-return']:
+                    vidgul_days += 1
+                    vidgul_plan += entry_plan
+                elif entry.reason == 'dripicons-store':
+                    # Full day training - count entire planned day
+                    training_days += 1
+                    training_plan += entry_plan
+                elif entry.reason == 'dripicons-to-do':
+                    # In-work hours training - only count hours from training_records (handled below)
+                    training_days += 1
+
+            extra_training_hours = db.session.query(func.sum(training_records.hours)).filter(
+                training_records.user_id == user.id,
+                training_records.date.between(date_start, date_end)
+            ).scalar() or 0.0
+
+            current_rate = salary_settings.hourly_rate if salary_settings.hourly_rate > 0 else 50.0
+            sick_units_no_cert  = sick_plan_no_cert  * current_rate * salary_settings.sick_multiplier
+            sick_units_with_cert = sick_plan_with_cert * current_rate * salary_settings.sick_multiplier
+            vacation_avg_rate = salary_settings.vacation_avg_rate or 0.0
+            vacation_units = vacation_plan * vacation_avg_rate * salary_settings.vacation_multiplier
+            
+            # Training hours and units
+            total_training_hours = training_plan + extra_training_hours
+            vacation_avg_rate = salary_settings.vacation_avg_rate or 0.0
+            training_units = total_training_hours * vacation_avg_rate * salary_settings.training_multiplier
+            
+            total_units_mech = sick_units_no_cert + sick_units_with_cert + vacation_units + training_units
+
+            # Logic for Students
+            fund_hours_by_schedule = 0.0
+            student_units = 0.0
+            norma_chasa = 0.0
+
+            if salary_settings.is_student:
+                student_typical_h = salary_settings.hours_per_day or 10.0
+                for e in calendar_entries:
+                    if e.work_time and e.work_time > 0:
+                        student_typical_h = e.work_time
+                        break
+                
+                records_map = {entry.today_date: {'time': entry.work_time, 'reason': entry.reason} for entry in calendar_entries}
+                
+                curr_d = date_start
+                while curr_d <= date_end:
+                    if curr_d in records_map:
+                        e_time = records_map[curr_d]['time'] or 0.0
+                        if e_time == 0 and not records_map[curr_d]['reason'] and curr_d.weekday() < 5:
+                            fund_hours_by_schedule += student_typical_h
+                        else:
+                            fund_hours_by_schedule += e_time
+                    else:
+                        if curr_d.weekday() < 5:
+                            fund_hours_by_schedule += student_typical_h
+                    curr_d += timedelta(days=1)
+
+                if fund_hours_by_schedule > 0:
+                    norma_chasa = salary_settings.monthly_rate / fund_hours_by_schedule
+                
+                student_units = norma_chasa * (fact_hours or 0)
+            else:
+                fund_hours_by_schedule = plan_hours
+
+            user_info = {
+                'user_id': user.id,
+                'user_name': user.user_fullname,
+                'user_departament': departament_name.dep_name,
+                'count_day_in_work': int(count_work_day),
+                'plan_work': self.format_number(fund_hours_by_schedule),
+                'fact_work': self.format_number(fact_hours),
+                'salary_report': {
+                    'is_student': salary_settings.is_student,
+                    'sick_no_cert':  {'days': sick_days_no_cert,  'units': round(sick_units_no_cert, 2), 'plan': sick_plan_no_cert},
+                    'sick_with_cert':{'days': sick_days_with_cert, 'units': round(sick_units_with_cert, 2), 'plan': sick_plan_with_cert},
+                    'vacation':      {'days': vacation_days,       'units': round(vacation_units, 2), 'plan': vacation_plan},
+                    'vacation_avg_rate': vacation_avg_rate,
+                    'training':      {'hours': total_training_hours, 'units': round(training_units, 2), 'plan': training_plan},
+                    'extra_training_hours': extra_training_hours,
+                    'training_mult': salary_settings.training_multiplier,
+                    'total_units_mech': round(total_units_mech, 2),
+                    'hourly_rate': current_rate,
+                    'monthly_rate': salary_settings.monthly_rate,
+                    'hours_per_day': salary_settings.hours_per_day,
+                    'sick_mult': salary_settings.sick_multiplier,
+                    'vac_mult': salary_settings.vacation_multiplier,
+                    'train_mult': salary_settings.training_multiplier,
+                    'student_units': round(student_units, 2),
+                    'total_units_student': round(student_units, 2),
+                    'norma_chasa': round(norma_chasa, 2),
+                    'month_working_days': month_working_days
+                },
+                'sort': departament_name.sort_num or 99,
+                'num_in_list': user.user_num_list or 99
+            }
+            if user_info['user_departament'] != 'Адміністратори':
+                info_list.append(user_info)
+        
+        users_info = sorted(info_list, key=lambda x: (x['sort'], x['num_in_list']))
+        return users_info
     def get_users_calendar_info_optimized(self, user_id, date_start, date_end):
         get_user_departaments = users_departament.query.filter(users_departament.user_id==user_id,
                             users_departament.access_level>=1).all()

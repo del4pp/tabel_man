@@ -951,7 +951,7 @@ def download_fuel_report(month, year):
 
     # Заголовок
     header_title = f"Облік витрат пального по паливним карткам - {month_name} {year}"
-    subtitle = "Дніпро-Сервіс"
+    subtitle = "Дніпро-Скан-Сервіс"
     elements.append(Paragraph(header_title, title_style))
     elements.append(Paragraph(subtitle, subtitle_style))
 
@@ -2083,7 +2083,7 @@ def company_fuel():
             'transactions': transactions_data
         })
 
-    dss_cars = [car for car in car_data if car['company_name'] == 'ДНІПРО-СЕРВІС']
+    dss_cars = [car for car in car_data if car['company_name'] == 'Дніпро-Скан-Сервіс']
     tf_cars = [car for car in car_data if car['company_name'] == 'ТФ']
 
     selected_date = last_day_of_month if (
@@ -2511,7 +2511,7 @@ def company_fuel_pdf():
                 'company_name': car.company_name
             })
 
-        dss_cars = [car for car in car_data if car['company_name'] == 'ДНІПРО-СЕРВІС']
+        dss_cars = [car for car in car_data if car['company_name'] == 'Дніпро-Скан-Сервіс']
         tf_cars = [car for car in car_data if car['company_name'] == 'ТФ']
 
         table_headers = [
@@ -2536,7 +2536,7 @@ def company_fuel_pdf():
         footer_color = colors.HexColor('#d3d3d3')
 
         if dss_cars:
-            elements.append(Paragraph("ДНІПРО-СЕРВІС", subtitle_style))
+            elements.append(Paragraph("Дніпро-Скан-Сервіс", subtitle_style))
             elements.append(Spacer(1, 6))
             dss_table_data = [table_headers]
             total_cost_dss = 0
@@ -3051,6 +3051,381 @@ def calendar_view():
                            user_transport=user_transport)
 
 
+@app.route('/salary-report')
+@login_required
+def salary_report_view():
+    user = current_user
+    user_id = user.id
+    user_class = tm_users.get_users.Users(user_id)
+    user_info = user_class.get_user_info()
+
+    current_month = datetime.now().month
+    if 'month' in request.args:
+        current_month = int(request.args['month'])
+
+    current_year = datetime.now().year
+    if 'year' in request.args:
+        current_year = int(request.args['year'])
+
+    first_day = datetime(current_year, current_month, 1)
+    if current_month < 12:
+        last_day = datetime(current_year, current_month + 1, 1) - timedelta(days=1)
+    else:
+        last_day = datetime(current_year + 1, 1, 1) - timedelta(days=1)
+
+    from model import users_departament, departaments
+    user_info_list = user_class.get_salary_report_info(user_id, first_day, last_day)
+
+    # List of users with full access regardless of admin status
+    SUPERUSER_IDS = [11, 78, 84, 73, 72, 74, 44]
+    
+    # Check if this specific user has explicit permission to view the report
+    from model import user_salary_settings
+    settings = user_salary_settings.query.filter_by(user_id=user_id).first()
+    has_explicit_permission = settings.can_view_report if settings else False
+
+    # Permission logic to filter user list by department access
+    is_admin = user_info.get('user_access') == 1 or user_id in SUPERUSER_IDS
+    
+    if not is_admin and not has_explicit_permission:
+        # If not admin and no explicit permission, deny access
+        return redirect(url_for('dashboard'))
+
+    if not is_admin:
+        get_user_departaments = users_departament.query.filter(
+            users_departament.user_id == user_id, 
+            users_departament.access_level >= 1
+        ).all()
+        dep_name_list = []
+        for u_dep in get_user_departaments:
+            dep = departaments.query.filter_by(id=u_dep.dep_id).first()
+            if dep:
+                dep_name_list.append(dep.dep_name)
+        
+        filtered_list = []
+        for ui in user_info_list:
+            if ui.get('user_departament') in dep_name_list:
+                filtered_list.append(ui)
+            elif ui.get('salary_report', {}).get('is_student') and 'Студенти' in dep_name_list:
+                filtered_list.append(ui)
+        user_info_list = filtered_list
+
+    return render_template('calendar/salary-report.html',
+                           user_info=user_info,
+                           current_month=current_month,
+                           current_year=current_year,
+                           users_info=user_info_list,
+                           superuser_ids=SUPERUSER_IDS,
+                           is_admin=is_admin,
+                           title="Фінзвіт")
+
+
+@app.route('/salary-report/pdf')
+@login_required
+def salary_report_pdf():
+    from calendar import monthrange
+    user = current_user
+    user_id = user.id
+    user_class = tm_users.get_users.Users(user_id)
+    user_info = user_class.get_user_info()
+
+    current_month = int(request.args.get('month', datetime.now().month))
+    current_year = int(request.args.get('year', datetime.now().year))
+
+    first_day = datetime(current_year, current_month, 1)
+    if current_month < 12:
+        last_day = datetime(current_year, current_month + 1, 1) - timedelta(days=1)
+    else:
+        last_day = datetime(current_year + 1, 1, 1) - timedelta(days=1)
+
+    from model import users_departament, departaments
+    user_info_list = user_class.get_salary_report_info(user_id, first_day, last_day)
+
+    # Permission logic to filter user list by department access
+    if user_info.get('user_access') != 1 and user_id not in [11, 78, 84, 73, 72, 74]:
+        get_user_departaments = users_departament.query.filter(
+            users_departament.user_id == user_id, 
+            users_departament.access_level >= 1
+        ).all()
+        dep_name_list = []
+        for u_dep in get_user_departaments:
+            dep = departaments.query.filter_by(id=u_dep.dep_id).first()
+            if dep:
+                dep_name_list.append(dep.dep_name)
+        
+        filtered_list = []
+        for ui in user_info_list:
+            if ui.get('user_departament') in dep_name_list:
+                filtered_list.append(ui)
+            elif ui.get('salary_report', {}).get('is_student') and 'Студенти' in dep_name_list:
+                filtered_list.append(ui)
+        user_info_list = filtered_list
+
+    # Separate mechanics and students
+    mechanics_by_dept = {}
+    students = []
+    
+    for ui in user_info_list:
+        if ui.get('salary_report', {}).get('is_student'):
+            students.append(ui)
+        else:
+            dept = ui.get('user_departament', 'Не вказано')
+            if dept not in mechanics_by_dept:
+                mechanics_by_dept[dept] = []
+            mechanics_by_dept[dept].append(ui)
+
+    # Setup ReportLab
+    pdfmetrics.registerFont(TTFont('DejaVuSerif', 'static/fonts/DejaVuSerif.ttf'))
+    pdfmetrics.registerFont(TTFont('DejaVuSerif-Bold', 'static/fonts/DejaVuSerif-Bold.ttf'))
+    buffer = BytesIO()
+    report_title = f"Фінансовий звіт за {current_month:02d}.{current_year}"
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=15, bottomMargin=15, leftMargin=15, rightMargin=15, title=report_title)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Title'],
+        fontName='DejaVuSerif-Bold',
+        fontSize=14,
+        alignment=1,
+        spaceAfter=15
+    )
+    
+    dept_style = ParagraphStyle(
+        'DeptStyle',
+        fontName='DejaVuSerif-Bold',
+        fontSize=10,
+        spaceBefore=10,
+        spaceAfter=5
+    )
+
+    header_small_style = ParagraphStyle(
+        'HeaderSmall',
+        fontName='DejaVuSerif-Bold',
+        fontSize=7,
+        alignment=1,
+        leading=8
+    )
+
+    cell_style = ParagraphStyle(
+        'CellStyle',
+        fontName='DejaVuSerif',
+        fontSize=7,
+        alignment=1,
+        leading=8
+    )
+
+    cell_style_left = ParagraphStyle(
+        'CellStyleLeft',
+        fontName='DejaVuSerif',
+        fontSize=7,
+        alignment=0,
+        leading=8
+    )
+
+    elements.append(Paragraph(f"Фінансовий звіт за {current_month}.{current_year}", title_style))
+
+    # --- MECHANICS TABLES ---
+    for dept, members in mechanics_by_dept.items():
+        elements.append(Paragraph(f"Відділ: {dept}", dept_style))
+        
+        # Table Header (2 rows to match HTML grouped headers)
+        header = [
+            [Paragraph("ФІО", header_small_style), Paragraph("Фонд год", header_small_style), 
+             Paragraph("Факт год", header_small_style), Paragraph("Ставка/год", header_small_style),
+             Paragraph("Хворіє", header_small_style), "", "",
+             Paragraph("Хв. Лік", header_small_style), "", "",
+             Paragraph("Відпустка", header_small_style), "", "",
+             Paragraph("Навчання", header_small_style), "", "",
+             Paragraph("РАЗОМ", header_small_style)],
+            ["", "", "", "", 
+             Paragraph("Дні", header_small_style), Paragraph("Ставка", header_small_style), Paragraph("Юніти", header_small_style),
+             Paragraph("Дні", header_small_style), Paragraph("Ставка", header_small_style), Paragraph("Юніти", header_small_style),
+             Paragraph("Дні", header_small_style), Paragraph("Ставка", header_small_style), Paragraph("Юніти", header_small_style),
+             Paragraph("Год", header_small_style), Paragraph("Ставка", header_small_style), Paragraph("Юніти", header_small_style),
+             ""]
+        ]
+        
+        data = []
+        total_p = 0
+        total_f = 0
+        total_u = 0
+        total_s1_u = 0
+        total_s2_u = 0
+        total_v_u = 0
+        total_t_u = 0
+        
+        for ui in members:
+            sr = ui.get('salary_report', {})
+            # Only include those with reasons (matching HTML default view logic)
+            has_reason = (
+                float(sr.get('sick_no_cert', {}).get('days', 0) or 0) > 0 or
+                float(sr.get('sick_with_cert', {}).get('days', 0) or 0) > 0 or
+                float(sr.get('vacation', {}).get('days', 0) or 0) > 0 or
+                float(sr.get('training', {}).get('hours', 0) or 0) > 0
+            )
+            
+            if not has_reason:
+                continue
+                
+            row_total = float(sr.get('total_units_mech', 0))
+            sick_rate = round(float(sr.get('hourly_rate', 0) or 0) * 0.8, 2)
+            data.append([
+                Paragraph(ui.get('user_name', ''), cell_style_left),
+                ui.get('plan_work', 0),
+                ui.get('fact_work', 0),
+                sr.get('hourly_rate', 0),
+                # Sick No Cert
+                sr.get('sick_no_cert', {}).get('days', 0),
+                sick_rate,
+                sr.get('sick_no_cert', {}).get('units', 0),
+                # Sick With Cert
+                sr.get('sick_with_cert', {}).get('days', 0),
+                sick_rate,
+                sr.get('sick_with_cert', {}).get('units', 0),
+                # Vacation
+                sr.get('vacation', {}).get('days', 0),
+                sr.get('vacation_avg_rate', 0),
+                sr.get('vacation', {}).get('units', 0),
+                # Training
+                sr.get('training', {}).get('hours', 0),
+                sr.get('training_rate', 0),
+                sr.get('training', {}).get('units', 0),
+                row_total
+            ])
+            total_p += float(ui.get('plan_work', 0) or 0)
+            total_f += float(ui.get('fact_work', 0) or 0)
+            total_u += row_total
+            total_s1_u += float(sr.get('sick_no_cert', {}).get('units', 0) or 0)
+            total_s2_u += float(sr.get('sick_with_cert', {}).get('units', 0) or 0)
+            total_v_u += float(sr.get('vacation', {}).get('units', 0) or 0)
+            total_t_u += float(sr.get('training', {}).get('units', 0) or 0)
+        
+        if not data:
+            continue # No one in this department has reasons
+            
+        # Add footer row
+        data.append([
+            Paragraph("РАЗОМ:", header_small_style),
+            round(total_p, 1),
+            round(total_f, 1),
+            "", # Norma
+            "", # Sick D
+            "", # Sick S
+            round(total_s1_u, 2), # Sick U
+            "", # SickL D
+            "", # SickL S
+            round(total_s2_u, 2), # SickL U
+            "", # Vac D
+            "", # Vac S
+            round(total_v_u, 2), # Vac U
+            "", # Train H
+            "", # Train S
+            round(total_t_u, 2), # Train U
+            round(total_u, 2)
+        ])
+        
+        table = Table(header + data, colWidths=[140, 40, 40, 45, 30, 45, 45, 30, 45, 45, 30, 45, 45, 38, 45, 45, 55])
+        table.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+            ('BACKGROUND', (0,0), (6,1), colors.lightgrey), # Header bg
+            ('BACKGROUND', (0,0), (-1,1), colors.lightgrey),# Header bg
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('FONTNAME', (0,0), (-1,-1), 'DejaVuSerif'),
+            ('FONTSIZE', (0,0), (-1,-1), 6),
+            ('FONTSIZE', (0,0), (-1,1), 7), # Header font size
+            ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey), # Footer bg
+            # Spanning for Header
+            ('SPAN', (0,0), (0,1)), # ФІО
+            ('SPAN', (1,0), (1,1)), # Фонд
+            ('SPAN', (2,0), (2,1)), # Факт
+            ('SPAN', (3,0), (3,1)), # Ставка
+            ('SPAN', (4,0), (6,0)), # Хворіє
+            ('SPAN', (7,0), (9,0)), # Хв Лік
+            ('SPAN', (10,0), (12,0)), # Відпустка
+            ('SPAN', (13,0), (15,0)), # Навчання
+            ('SPAN', (16,0), (16,1)), # Разом
+        ]))
+        elements.append(table)
+        elements.append(PageBreak())
+
+    # --- STUDENTS TABLE ---
+    if students:
+        elements.append(Paragraph("Студенти", dept_style))
+        header = [[
+            Paragraph("ФІО", header_small_style), Paragraph("Фонд (п)", header_small_style),
+            Paragraph("Факт год", header_small_style), Paragraph("Днів", header_small_style),
+            Paragraph("Роб. дн", header_small_style), Paragraph("Норма", header_small_style),
+            Paragraph("Юніти", header_small_style), Paragraph("Ставка/м", header_small_style)
+        ]]
+        data = []
+        total_p = 0
+        total_f = 0
+        total_u = 0
+        
+        for ui in students:
+            sr = ui.get('salary_report', {})
+            u_total = float(sr.get('student_units', 0))
+            
+            if u_total <= 0:
+                continue
+                
+            plan_h = float(ui.get('plan_work') or 0)
+            rate_m = float(sr.get('monthly_rate') or 0)
+            norma = round(rate_m / plan_h, 2) if plan_h > 0 else 0
+            
+            data.append([
+                Paragraph(ui.get('user_name', ''), cell_style_left),
+                ui.get('plan_work', 0),
+                ui.get('fact_work', 0),
+                ui.get('count_day_in_work', 0),
+                sr.get('month_working_days', 0),
+                norma,
+                u_total,
+                rate_m
+            ])
+            total_p += plan_h
+            total_f += float(ui.get('fact_work', 0) or 0)
+            total_u += u_total
+        
+        if not data:
+            # Check if we should clear students table
+            pass
+        else:
+            # Add footer
+            data.append([
+                Paragraph("РАЗОМ:", header_small_style),
+                round(total_p, 1),
+                round(total_f, 1),
+                "", "", "",
+                round(total_u, 2),
+                ""
+            ])
+            
+            table = Table(header + data, colWidths=[180, 60, 60, 50, 50, 60, 70, 60])
+            table.setStyle(TableStyle([
+                ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('FONTNAME', (0,0), (-1,-1), 'DejaVuSerif'),
+                ('FONTSIZE', (0,0), (-1,-1), 7),
+                ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey),
+            ]))
+            elements.append(table)
+
+    doc.build(elements)
+    buffer.seek(0)
+    
+    filename = f"salary_report_{current_month}_{current_year}.pdf"
+    response = make_response(buffer.getvalue())
+    response.mimetype = 'application/pdf'
+    response.headers['Content-Disposition'] = f'inline; filename={filename}'
+    return response
+
+
 @app.route('/calendar-event', methods=['POST'])
 @login_required
 def handle_calendar_event():
@@ -3068,6 +3443,7 @@ def handle_calendar_event():
         car_used = request.form.get('ownCar')
         fuelLiters = request.form.get('fuelLiters')
         fuelComment = request.form.get('fuelComment')
+        training_hours = request.form.get('trainingHours') or 0.0
         work_status = 1
 
         add_work = None
@@ -3108,14 +3484,17 @@ def handle_calendar_event():
         try:
             reason_dict = {'Хворіє': 'dripicons-medical', 'Хворіє з лікарняним': 'dripicons-pulse',
                        'Відгул':'dripicons-return', 'Нез\'ясовані причини': 'dripicons-cross',
-                       'Відрядження': 'dripicons-suitcase', 'Відпросився': 'dripicons-time-reverse', 'Навчання': 'dripicons-store',
+                       'Відрядження': 'dripicons-suitcase', 'Відпросився': 'dripicons-time-reverse', 
+                       'Навчання': 'dripicons-store', 'Навчання (цілий день)': 'dripicons-store',
+                       'Навчання (в робочий час)': 'dripicons-to-do',
                        'Додатково вийшов':'dripicons-jewel', 'Віддалена робота': 'dripicons-home',
                        'Компенсація відпустки':'dripicons-card', 'Відпустка за свій рахунок':'dripicons-hourglass',
                        'Затримався або вийшов раніше': 'dripicons-media-loop',
                        'medicalReason': 'dripicons-medical', 'flagReason': 'dripicons-return',
                        'gamingReason': 'dripicons-cross', 'medicalReasonLikar': 'dripicons-pulse',
                        'suitcaseReason': 'dripicons-suitcase', 'crossReason': 'dripicons-time-reverse',
-                       'todoReason': 'dripicons-store', 'remoteWork': 'dripicons-home',
+                       'todoReason': 'dripicons-store', 'trainingInWorkHours': 'dripicons-to-do',
+                       'remoteWork': 'dripicons-home',
                        'additionalHoursCheck': 'dripicons-jewel', 'mymoneyReason': 'dripicons-hourglass',
                         'vidabopiz':'dripicons-media-loop'
                    }
@@ -3126,6 +3505,18 @@ def handle_calendar_event():
 
         if worked_hours == '':
             worked_hours = planned_hours
+
+        # Save training hours separately
+        training_h = float(training_hours)
+        existing_training = training_records.query.filter_by(user_id=user_id, date=date).first()
+        if training_h > 0:
+            if existing_training:
+                existing_training.hours = training_h
+            else:
+                new_training = training_records(user_id=user_id, date=date, hours=training_h)
+                db.session.add(new_training)
+        elif existing_training:
+            db.session.delete(existing_training)
 
         check_old = calendar_work.query.filter_by(today_date=date, user_id=user_id).first()
 
@@ -3303,6 +3694,7 @@ def get_calendar_info():
     get_work = calendar_work.query.filter_by(user_id=user_id, today_date=date).first()
     get_user_car = user_car.query.filter_by(user_id=user_id).first()
     get_user_fuel_data = fuel_data.query.filter_by(user_id=user_id, date_refuel=date).first()
+    get_training = training_records.query.filter_by(user_id=user_id, date=date).first()
 
     try:
         if get_work.work_status == 2 and not get_user_fuel_data:
@@ -3322,6 +3714,7 @@ def get_calendar_info():
             'dripicons-media-loop': 'vidabopiz',
             'dripicons-hourglass': 'mymoneyReason',
             'dripicons-store': 'todoReason',
+            'dripicons-to-do': 'trainingInWorkHours',
             'dripicons-home': 'remoteWork',
             'dripicons-jewel': 'additionalHoursCheck',
             'dripicons-pulse': 'medicalReasonLikar',
@@ -3339,6 +3732,7 @@ def get_calendar_info():
             'date': date,
             'plan_work': get_work.work_time,
             'fact_work': get_work.work_fact,
+            'training_hours': get_training.hours if get_training else 0.0,
             'comments': [],
             'abs_reason': reason,
             'car': True if get_user_car else False,
@@ -3378,6 +3772,7 @@ def get_calendar_info():
     return jsonify(calendar_info)
 
 
+
 @app.route('/delete-comment', methods=['POST'])
 def delete_comment():
     try:
@@ -3415,79 +3810,86 @@ def user_profile_page(profile_id):
         calendar_work.today_date <= last_day_of_last_year
     ).count()
 
-    get_before_vacation_days_sum = db.session.query(
+    # 1. Визначаємо початковий стан на 1 січня поточного року
+    initial_before_vacation_sum = db.session.query(
         func.sum(vacation.count_days)
     ).filter(
         vacation.years < year_now, vacation.user_id == profile_id
     ).scalar() or 0
 
-    get_before_canceled_days = (
-        vacations_canceled.query
-        .with_entities(func.coalesce(func.sum(vacations_canceled.count_days), 0))
-        .filter(and_(
-            vacations_canceled.user_id == profile_id,
-            vacations_canceled.year < year_now
-        ))
-        .scalar()
-    )
+    initial_used_before = calendar_work.query.filter(
+        calendar_work.reason.in_(['dripicons-card', 'vacation']),
+        calendar_work.user_id == profile_id,
+        calendar_work.today_date <= last_day_of_last_year
+    ).count()
 
+    initial_canceled_before = vacations_canceled.query.filter(
+        vacations_canceled.user_id == profile_id,
+        vacations_canceled.year < year_now
+    ).with_entities(func.coalesce(func.sum(vacations_canceled.count_days), 0)).scalar()
 
-    available_from_previous_years = get_before_vacation_days_sum - used_days_before - get_before_canceled_days
+    # Чистий залишок на початок року (захист від від'ємного значення, щоб не було "боргу" в 0)
+    available_from_prev_years_start = max(0, initial_before_vacation_sum - initial_used_before - initial_canceled_before)
 
+    # 2. Визначаємо все використання в ЦЬОМУ році
     get_count_canceled_days_this_year = vacations_canceled.query.filter_by(user_id=profile_id, year=year_now).first()
-    count_canceled_days_this_year = 0
-    if get_count_canceled_days_this_year:
-        count_canceled_days_this_year = get_count_canceled_days_this_year.count_days
+    count_canceled_days_this_year = get_count_canceled_days_this_year.count_days if get_count_canceled_days_this_year else 0
 
-    # Перший день поточного року (1 січня)
     first_day_of_current_year = datetime(year_now, 1, 1)
-
-    # Останній день поточного року (31 грудня)
     last_day_of_current_year = datetime(year_now, 12, 31, 23, 59, 59)
-    used_vacation_in_this_year = calendar_work.query.filter(
+    
+    used_vacation_this_year = calendar_work.query.filter(
         calendar_work.reason == 'vacation',
         calendar_work.user_id == profile_id,
         calendar_work.today_date >= first_day_of_current_year,
         calendar_work.today_date <= last_day_of_current_year
     ).count()
 
-    used_compensation_in_this_year = calendar_work.query.filter(
+    used_compensation_this_year = calendar_work.query.filter(
         calendar_work.reason == 'dripicons-card',
         calendar_work.user_id == profile_id,
         calendar_work.today_date >= first_day_of_current_year,
         calendar_work.today_date <= last_day_of_current_year
     ).count()
 
-    get_count_days_vacation_this_days = vacation.query.filter_by(user_id=profile_id, years=year_now).first()
-    count_vacation_days_in_this_year = 0
-    if get_count_days_vacation_this_days:
-        count_vacation_days_in_this_year = get_count_days_vacation_this_days.count_days
+    total_usage_this_year = used_vacation_this_year + used_compensation_this_year + count_canceled_days_this_year
 
-    diff_vacation_this_year = (count_vacation_days_in_this_year + available_from_previous_years ) - (used_vacation_in_this_year + used_compensation_in_this_year) - count_canceled_days_this_year
-    total_vacations = available_from_previous_years + diff_vacation_this_year
+    # 3. Динамічно розподіляємо використання
+    # Спочатку списуємо з минулих років
+    vacation_before_dynamic = max(0, available_from_prev_years_start - total_usage_this_year)
+    
+    # Решта використання йде на цей рік
+    remaining_usage = max(0, total_usage_this_year - available_from_prev_years_start)
+    
+    get_budget_this_year = vacation.query.filter_by(user_id=profile_id, years=year_now).first()
+    budget_this_year = get_budget_this_year.count_days if get_budget_this_year else 0
+    
+    # Захист бюджету цього року від від'ємного значення
+    vacation_this_year_available_dynamic = max(0, budget_this_year - remaining_usage)
 
-    # Перший день наступного року (1 січня наступного року)
-    first_day_of_next_year = datetime(year_now + 1, 1, 1)
+    # Загальний залишок
+    diff_vacation_total = vacation_before_dynamic + vacation_this_year_available_dynamic
 
-    # Останній день наступного року (31 грудня наступного року)
-    last_day_of_next_year = datetime(year_now + 1, 12, 31, 23, 59, 59)
+    # 4. Розрахунок на наступний рік
+    next_year = year_now + 1
+    get_budget_next_year = vacation.query.filter_by(user_id=profile_id, years=next_year).first()
+    budget_next_year = get_budget_next_year.count_days if get_budget_next_year else 0
 
-    # Фільтрація по датах для наступного року
-    used_vacation_in_next_year = calendar_work.query.filter(
+    first_day_next_year = datetime(next_year, 1, 1)
+    last_day_next_year = datetime(next_year, 12, 31, 23, 59, 59)
+    planned_next_year = calendar_work.query.filter(
         calendar_work.reason == 'vacation',
         calendar_work.user_id == profile_id,
-        calendar_work.today_date >= first_day_of_next_year,
-        calendar_work.today_date <= last_day_of_next_year
+        calendar_work.today_date >= first_day_next_year,
+        calendar_work.today_date <= last_day_next_year
     ).count()
 
-    next_year = int(datetime.now().year) + 1
-    get_count_vacation_days_next_year = vacation.query.filter_by(user_id=profile_id, years=next_year).first()
-    count_vacation_days_next_year = 0
-    if get_count_vacation_days_next_year:
-        count_vacation_days_next_year = get_count_vacation_days_next_year.count_days
+    # Анулювання на наступний рік (якщо є)
+    canceled_next_year = vacations_canceled.query.filter_by(user_id=profile_id, year=next_year).first()
+    count_canceled_next_year = canceled_next_year.count_days if canceled_next_year else 0
 
-    diff_vacation_next_year =  (diff_vacation_this_year) - used_vacation_in_next_year
-
+    # Залишок на наступний рік = залишок з цього року - заплановано на наступний рік - анульовано на наступний рік
+    diff_vacation_next_year = max(0, diff_vacation_total - planned_next_year - count_canceled_next_year)
     # Генерація списку років (від поточного до -10 років)
     years_list = list(range(2023, datetime.now().year + 6))
 
@@ -3504,8 +3906,58 @@ def user_profile_page(profile_id):
     permission = profile_class.get_premission(profile_id)
     users_list = profile_class.get_all_users()
 
+    # Salary settings для профілю
+    from model import user_salary_settings
+    salary_cfg = user_salary_settings.query.filter_by(user_id=profile_id).first()
+    salary_settings_data = {
+        'in_salary_report': salary_cfg.in_salary_report if salary_cfg else False,
+        'is_student': bool(salary_cfg.is_student) if salary_cfg else False,
+        'can_view_report': bool(salary_cfg.can_view_report) if salary_cfg else False,
+    }
+
     vacation_list = profile_class.get_all_vacations_year_info()
     print(vacation_list)
+
+    # 5. Початкові дані по роках (Нараховано / Використано / Анульовано)
+    from sqlalchemy import extract
+    yearly_usage = db.session.query(
+        extract('year', calendar_work.today_date).label('year'),
+        func.count(calendar_work.id).label('count')
+    ).filter(
+        calendar_work.user_id == profile_id,
+        calendar_work.reason.in_(['vacation', 'dripicons-card'])
+    ).group_by('year').all()
+    
+    usage_map = {int(row.year): row.count for row in yearly_usage}
+    
+    for vac in vacation_list:
+        vac['used_days'] = usage_map.get(vac['year'], 0)
+
+    # 6. Детальні дати по компенсаціях у цьому році
+    comp_records = calendar_work.query.filter(
+        calendar_work.reason == 'dripicons-card',
+        calendar_work.user_id == profile_id,
+        calendar_work.today_date.between(f'{year_now}-01-01', f'{year_now}-12-31')
+    ).order_by(calendar_work.today_date).all()
+
+    vacation_debug = {
+        'initial_before_vacation_sum': initial_before_vacation_sum,
+        'initial_used_before': initial_used_before,
+        'initial_canceled_before': initial_canceled_before,
+        'available_from_prev_years_start': available_from_prev_years_start,
+        'budget_this_year': budget_this_year,
+        'total_usage_this_year': total_usage_this_year,
+        'used_vacation_this_year': used_vacation_this_year,
+        'used_compensation_this_year': used_compensation_this_year,
+        'count_canceled_days_this_year': count_canceled_days_this_year,
+        'vacation_before_dynamic': vacation_before_dynamic,
+        'vacation_this_year_available_dynamic': vacation_this_year_available_dynamic,
+        'diff_vacation_total': diff_vacation_total,
+        'planned_next_year': planned_next_year,
+        'count_canceled_next_year': count_canceled_next_year,
+        'diff_vacation_next_year': diff_vacation_next_year,
+        'comp_records': [r.today_date.strftime('%d.%m.%Y') for r in comp_records]
+    }
 
     current_year_vacation = calendar_work.query.filter(
         calendar_work.reason == 'vacation',
@@ -3524,16 +3976,15 @@ def user_profile_page(profile_id):
     avto_cls = tm_users.get_users.UserAuto(profile_id)
     avto_info = avto_cls.get_user_car_info()
 
-
     return render_template(
         'profile/profile.html',
         user_info=user_info,
         profile_info=profile_info,
         departments=departments_list,
         user_id=profile_id,
-        count_day_vacation=count_vacation_days_in_this_year,
-        vacation_this_year=used_vacation_in_this_year,
-        diff_vacation= diff_vacation_this_year,
+        count_day_vacation=budget_this_year,
+        vacation_this_year=used_vacation_this_year,
+        diff_vacation= diff_vacation_total,
         diff_vacation_next_year=diff_vacation_next_year,
         years_list=years_list,
         list_vacation=sequences,
@@ -3542,13 +3993,15 @@ def user_profile_page(profile_id):
         users_list=users_list,
         year_now=year_now,
         month_now=datetime.now().month,
-        vacation_before=available_from_previous_years,
+        vacation_before=vacation_before_dynamic,
         leaders_list=leaders_list,
         vacation_list=vacation_list,
         vacation_report_access=vacation_report_access,
-        get_used_money=used_compensation_in_this_year,
+        get_used_money=used_compensation_this_year,
         count_vacation_canceled_days=count_canceled_days_this_year,
-        car_info=avto_info
+        car_info=avto_info,
+        vacation_debug=vacation_debug,
+        salary_settings=salary_settings_data
     )
 
 
@@ -3615,7 +4068,7 @@ def set_vacation_days():
     db.session.commit()
 
     # Перенаправлення користувача на іншу сторінку після обробки
-    return redirect(url_for('user_profile_page', profile_id=user_id))
+    return redirect(url_for('user_profile_page', profile_id=user_id, year=vacation_year))
 
 
 @app.route('/set-canceled-vacation-days', methods=['POST'])
@@ -3653,7 +4106,7 @@ def set_canceled_vacation_days():
     db.session.commit()
 
     # Redirect the user after processing
-    return redirect(url_for('user_profile_page', profile_id=user_id))
+    return redirect(url_for('user_profile_page', profile_id=user_id, year=canceled_year))
 
 
 @app.route('/set-vacation-period', methods=['POST'])
@@ -3999,7 +4452,10 @@ def mark_as_not_working():
 
         # Видаляємо записи з fuel_data для цього user_id і date_refuel
         fuel_data.query.filter_by(user_id=user_id, date_refuel=date_obj).delete()
-        db.session.commit()
+        
+        # Видаляємо записи з training_records для цього user_id і date
+        from model import training_records
+        training_records.query.filter_by(user_id=user_id, date=date_obj).delete()
 
         # Видаляємо записи з calendar_work для цього user_id і today_date
         calendar_work.query.filter_by(user_id=user_id, today_date=date_obj).delete()
@@ -4296,21 +4752,19 @@ def send_email(receiver_email, link):
     sender_email = "leshashupenko@gmail.com"
     password = "jivl tpaf gbtg mfiz"
 
-    message = MIMEText(f"Click the link to reset your password: http://46.225.170.124:8000/recovery-{link}")
+    message = MIMEText(f"Click the link to reset your password: https://tabel.scania.dp.ua/recovery-{link}")
     message['Subject'] = 'Password Reset Link'
     message['From'] = sender_email
-    message['To'] = receiver_email
+    message['To'] = sender_email
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message.as_string())
-        # Дублюємо лист на вказану пошту
-        server.sendmail(sender_email, "leshashupenko88@gmail.com", message.as_string())
         print('send mail')
 
 # Функція для запису посилання в базу даних
 def save_link_to_database(user_id, link):
-    add_secret = resetpassword(user_id=user_id, secret_key=link, end_dt=datetime.now() + timedelta(hours=8))
+    add_secret = resetpassword(user_id=user_id, secret_key=link, end_dt=datetime.now() + timedelta(hours=1))
     db.session.add(add_secret)
     db.session.commit()
 
@@ -4339,7 +4793,7 @@ def recovery_user_pass(secret_key):
     print(secret_key)
     if request.method == 'POST':
         new_pass = request.form['newpass']
-        get_user_id = resetpassword.query.filter(and_(resetpassword.secret_key==secret_key, resetpassword.end_dt > datetime.now())).first()
+        get_user_id = resetpassword.query.filter(and_(resetpassword.secret_key==secret_key)).first()
         if get_user_id:
             user_id = get_user_id.user_id
             hash_pass = generate_password_hash(new_pass)
@@ -4349,12 +4803,6 @@ def recovery_user_pass(secret_key):
             return redirect(url_for('logout'))
         else:
             return jsonify({'error': 'timeout'})
-    
-    # Перевірка для GET запиту, чи посилання все ще дійсне
-    check_link = resetpassword.query.filter(and_(resetpassword.secret_key == secret_key, resetpassword.end_dt > datetime.now())).first()
-    if not check_link:
-        return jsonify({'error': 'expired or invalid link'})
-        
     return render_template('users/recovery.html', secret_key=secret_key)
 
 
@@ -6322,14 +6770,19 @@ def vacation_conflicts(year):
     )
     elements.append(title)
 
-    data = [["№", "Відділ", "ПІБ", "Майбутні відпустки", "Викор.\nднів", "Залишок\n(попер. | поточ. | всього)"]]
+    today = date.today()
+    is_current_year = (year == today.year)
+
+    data = [["№", "Відділ", "ПІБ", "Майбутні відпустки", "Викор.\nднів", "Ануль.\nмин. рік", "Зал. попер. р.\n(на сьогодні)", "Залишок\n(попер. | поточ. | всього)"]]
     row_colors = []
 
     for idx, emp_data in enumerate(employees_vacation_data, 1):
+        # ... (logic for employee remains same)
         employee = emp_data['employee']
         sequences = emp_data['sequences']
         dept_id = emp_data['department']
-
+        
+        # [Inner rows logic remains same]
         inner_rows = []
         inner_style = TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), 'DejaVuSerif'),
@@ -6344,30 +6797,17 @@ def vacation_conflicts(year):
         if not sequences:
             inner_rows.append([Paragraph("—", base_style)])
         else:
-            # Поточна дата для фільтрації минулих відпусток
-            today = date.today()
-
             for seq in sequences:
                 start = seq['start_date']
                 end = seq['end_date']
-
-                # Пропускаємо відпустки, які вже закінчилися
                 if end < today:
                     continue
-
                 days = (end - start).days + 1
-
-                # Перевіряємо конфлікти ТІЛЬКИ для відділів 29, 40, 36
                 overlap_names = []
                 overlap_names_set = set()
-
-                print(f"\nПеревірка для {emp_data['employee']['name']}, dept={dept_id}, відпустка {start} - {end}")
-
                 if dept_id in [29, 40, 36]:
-                    # Перевіряємо кожен день поточної відпустки
                     current_day = start
                     while current_day <= end:
-                        # Шукаємо інших працівників ТОГО Ж відділу у цей день
                         others = db.session.query(users).join(
                             calendar_work, users.id == calendar_work.user_id
                         ).filter(
@@ -6376,110 +6816,106 @@ def vacation_conflicts(year):
                             calendar_work.reason == 'vacation',
                             calendar_work.today_date == current_day
                         ).all()
-
-                        if others:
-                            print(f"  День {current_day}: знайдено {len(others)} конфліктів")
-
                         for other_user in others:
                             overlap_names_set.add(other_user.user_fullname)
-
                         current_day += timedelta(days=1)
-
                     overlap_names = sorted(list(overlap_names_set))
-                    if overlap_names:
-                        print(f"  ВСЬОГО конфліктів: {overlap_names}")
-
-                # Формуємо текст з інформацією про перетин
                 text = f"{start.strftime('%d.%m')} – {end.strftime('%d.%m.%Y')} ({days} дн.)"
                 if overlap_names:
                     text += f"<br/><font color='red'><b>Перетин:</b> {', '.join(overlap_names)}</font>"
-
                 para = Paragraph(text, base_style)
                 inner_rows.append([para])
-
-                # Додаємо червону заливку якщо є конфлікт
                 row_idx = len(inner_rows) - 1
                 if overlap_names:
                     inner_style.add('BACKGROUND', (0, row_idx), (-1, row_idx), colors.HexColor("#FFC0C0"))
-
-            # Якщо після фільтрації не залишилося майбутніх відпусток
             if not inner_rows:
                 inner_rows.append([Paragraph("—", base_style)])
 
         inner_table = Table(inner_rows, colWidths=[None])
         inner_table.setStyle(inner_style)
 
-        # Підрахунок використаних днів та залишків (без змін)
+        # Розрахунок залишків (згідно з новою логікою)
         profile_id = emp_data['profile_id']
         last_day_of_last_year = date(year, 1, 1) - timedelta(days=1)
 
-        used_days_before = calendar_work.query.filter(
+        # 1. Початковий стан на 1 січня
+        initial_before_vacation_sum = db.session.query(func.sum(vacation.count_days)).filter(
+            vacation.years < year, vacation.user_id == profile_id
+        ).scalar() or 0
+        initial_used_before = calendar_work.query.filter(
             calendar_work.reason.in_(['dripicons-card', 'vacation']),
-            calendar_work.user_id == profile_id,
-            calendar_work.today_date <= last_day_of_last_year
+            calendar_work.user_id == profile_id, calendar_work.today_date <= last_day_of_last_year
         ).count()
-
-        get_before_vacation_days_sum = db.session.query(
-            func.sum(vacation.count_days)
-        ).filter(
-            vacation.years < year,
-            vacation.user_id == profile_id
+        initial_canceled_before = db.session.query(func.coalesce(func.sum(vacations_canceled.count_days), 0)).filter(
+            vacations_canceled.user_id == profile_id, vacations_canceled.year < year
+        ).scalar() or 0
+        
+        canceled_prev_year_only = db.session.query(func.coalesce(func.sum(vacations_canceled.count_days), 0)).filter(
+            vacations_canceled.user_id == profile_id, vacations_canceled.year == (year - 1)
         ).scalar() or 0
 
-        get_before_canceled_days = db.session.query(
-            func.coalesce(func.sum(vacations_canceled.count_days), 0)
-        ).filter(
-            vacations_canceled.user_id == profile_id,
-            vacations_canceled.year < year
-        ).scalar() or 0
+        available_from_prev_years_start = max(0, initial_before_vacation_sum - initial_used_before - initial_canceled_before)
 
-        available_from_previous_years = get_before_vacation_days_sum - used_days_before - get_before_canceled_days
-
-        used_vacation_in_this_year = calendar_work.query.filter(
-            calendar_work.reason == 'vacation',
-            calendar_work.user_id == profile_id,
-            calendar_work.today_date >= datetime(year, 1, 1),
-            calendar_work.today_date <= datetime(year, 12, 31)
+        # 2. Використання (всього за рік)
+        used_vacation_full_year = calendar_work.query.filter(
+            calendar_work.reason == 'vacation', calendar_work.user_id == profile_id,
+            calendar_work.today_date.between(f'{year}-01-01', f'{year}-12-31')
         ).count()
-
-        used_compensation_in_this_year = calendar_work.query.filter(
-            calendar_work.reason == 'dripicons-card',
-            calendar_work.user_id == profile_id,
-            calendar_work.today_date >= datetime(year, 1, 1),
-            calendar_work.today_date <= datetime(year, 12, 31)
+        used_compensation_full_year = calendar_work.query.filter(
+            calendar_work.reason == 'dripicons-card', calendar_work.user_id == profile_id,
+            calendar_work.today_date.between(f'{year}-01-01', f'{year}-12-31')
         ).count()
+        get_canceled_this_year = vacations_canceled.query.filter_by(user_id=profile_id, year=year).first()
+        count_canceled_this_year = get_canceled_this_year.count_days if get_canceled_this_year else 0
+        
+        total_usage_full_year = used_vacation_full_year + used_compensation_full_year + count_canceled_this_year
 
-        get_count_canceled_days_this_year = vacations_canceled.query.filter_by(
-            user_id=profile_id,
-            year=year
-        ).first()
-        count_canceled_days_this_year = get_count_canceled_days_this_year.count_days if get_count_canceled_days_this_year else 0
+        # 3. Баланс МИНУЛИХ РОКІВ на сьогодні
+        balance_today_display = "—"
+        if is_current_year:
+            used_vacation_today = calendar_work.query.filter(
+                calendar_work.reason == 'vacation', calendar_work.user_id == profile_id,
+                calendar_work.today_date >= datetime(year, 1, 1),
+                calendar_work.today_date <= datetime.now()
+            ).count()
+            used_compensation_today = calendar_work.query.filter(
+                calendar_work.reason == 'dripicons-card', calendar_work.user_id == profile_id,
+                calendar_work.today_date >= datetime(year, 1, 1),
+                calendar_work.today_date <= datetime.now()
+            ).count()
+            
+            # Вся активність цього року, яка списується спочатку з минулих років
+            usage_until_today = used_vacation_today + used_compensation_today + count_canceled_this_year
+            
+            # Скільки залишилося саме від "хвоста" минулих років на сьогодні
+            bal_prev_today = max(0, available_from_prev_years_start - usage_until_today)
+            balance_today_display = str(bal_prev_today)
 
+        # 4. Фінальні розрахунки на кінець року
+        vacation_before_dynamic = max(0, available_from_prev_years_start - total_usage_full_year)
+        remaining_usage = max(0, total_usage_full_year - available_from_prev_years_start)
         vac_days = vacation.query.filter_by(user_id=profile_id, years=year).first()
-        count_vacation_days_in_this_year = vac_days.count_days if vac_days else 0
-
-        total_used = used_vacation_in_this_year + used_compensation_in_this_year
-
-        diff_vacation_this_year = (
-                                              count_vacation_days_in_this_year + available_from_previous_years) - total_used - count_canceled_days_this_year
-
-        total_available = available_from_previous_years + count_vacation_days_in_this_year
+        budget_this_year = vac_days.count_days if vac_days else 0
+        vacation_this_year_available_dynamic = max(0, budget_this_year - remaining_usage)
+        diff_vacation_total = vacation_before_dynamic + vacation_this_year_available_dynamic
 
         data.append([
             idx,
             employee.get('department', ''),
             employee['name'],
             inner_table,
-            total_used,
-            f"{available_from_previous_years} | {count_vacation_days_in_this_year} | {diff_vacation_this_year}"
+            used_vacation_full_year + used_compensation_full_year,
+            canceled_prev_year_only,
+            balance_today_display,
+            f"{vacation_before_dynamic} | {vacation_this_year_available_dynamic} | {diff_vacation_total}"
         ])
 
         row_colors.append(emp_data.get('color'))
 
     # ===================================================================
-    # СТВОРЕННЯ ТАБЛИЦІ З ЗАЛИВКОЮ КЕРІВНИКІВ
+    # СТВОРЕННЯ ТАБЛИЦІ
     # ===================================================================
-    table = Table(data, colWidths=[0.4 * inch, 1.3 * inch, 1.6 * inch, None, 0.6 * inch, 1.4 * inch], repeatRows=1)
+    table = Table(data, colWidths=[0.3 * inch, 0.7 * inch, 1.3 * inch, None, 0.5 * inch, 0.5 * inch, 0.8 * inch, 1.2 * inch], repeatRows=1)
 
     table_styles = [
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
@@ -6507,3 +6943,55 @@ def vacation_conflicts(year):
     resp.headers['Content-Type'] = 'application/pdf'
     resp.headers['Content-Disposition'] = f'inline; filename=vacation_conflicts_{year}.pdf'
     return resp
+@app.route('/api/update_salary_settings', methods=['POST'])
+@login_required
+def update_salary_settings():
+    if current_user.id not in [11, 44, 78, 73, 72]: # Allow superusers to update settings
+        return jsonify({'error': 'Доступ заборонено'}), 403
+
+    from model import user_salary_settings
+    data = request.get_json()
+    user_id = data.get('userId') or data.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'No user_id provided'}), 400
+
+    settings = user_salary_settings.query.filter_by(user_id=user_id).first()
+    if not settings:
+        settings = user_salary_settings(user_id=user_id)
+        db.session.add(settings)
+
+    # Update only provided fields
+    if 'hourlyRate' in data or 'hourly_rate' in data:
+        settings.hourly_rate = float(data.get('hourlyRate') or data.get('hourly_rate'))
+    
+    if 'monthlyRate' in data or 'monthly_rate' in data:
+        settings.monthly_rate = float(data.get('monthlyRate') or data.get('monthly_rate'))
+    
+    if 'vacation_avg_rate' in data:
+        settings.vacation_avg_rate = float(data.get('vacation_avg_rate'))
+
+
+    if 'isStudent' in data or 'is_student' in data:
+
+        val = data.get('isStudent')
+        if val is None:
+            val = data.get('is_student')
+        settings.is_student = bool(val)
+    
+    if 'inSalaryReport' in data or 'in_salary_report' in data:
+        val = data.get('inSalaryReport')
+        if val is None:
+            val = data.get('in_salary_report')
+        settings.in_salary_report = bool(val)
+
+    if 'canViewReport' in data or 'can_view_report' in data:
+        val = data.get('canViewReport')
+        if val is None:
+            val = data.get('can_view_report')
+        settings.can_view_report = bool(val)
+
+    if 'hoursPerDay' in data or 'hours_per_day' in data:
+        settings.hours_per_day = float(data.get('hoursPerDay') or data.get('hours_per_day'))
+
+    db.session.commit()
+    return jsonify({'success': True})

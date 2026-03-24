@@ -117,6 +117,16 @@ class calendar_work(db.Model):
         return f"UserID: {self.id}"
 
 
+class training_records(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    hours = db.Column(db.Float, default=0.0)
+
+    def __init__(self, *args, **kwargs):
+        super(training_records, self).__init__(*args, **kwargs)
+
+
 class work_comments(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     records_id = db.Column(db.Integer)
@@ -563,3 +573,22 @@ class calendar_work_temp(db.Model):
 
     def __repr__(self):
         return f"CalendarWorkTemp(id={self.id}, original_id={self.original_id}, user_id={self.user_id})"
+
+
+class user_salary_settings(db.Model):
+    __tablename__ = 'user_salary_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    hourly_rate = db.Column(db.Float, default=0.0)          # Для погодинної оплати
+    monthly_rate = db.Column(db.Float, default=0.0)         # Для студентів (фіксована ставка)
+    is_student = db.Column(db.Boolean, default=False)
+    in_salary_report = db.Column(db.Boolean, default=False) # Чи відображати у фін. звіті
+    can_view_report = db.Column(db.Boolean, default=False)  # Чи має доступ до перегляду звіту
+    vacation_avg_rate = db.Column(db.Float, default=0.0)    # Сер. вартість мін. міс для відпустки
+    hours_per_day = db.Column(db.Float, default=10.0)       # Стандартна кількість годин у дні
+    sick_multiplier = db.Column(db.Float, default=0.8)      # Коефіцієнт лікарняних
+    vacation_multiplier = db.Column(db.Float, default=0.8)  # Коефіцієнт відпустки
+    training_multiplier = db.Column(db.Float, default=0.8)  # Коефіцієнт навчання
+
+    def __init__(self, *args, **kwargs):
+        super(user_salary_settings, self).__init__(*args, **kwargs)

@@ -1,0 +1,829 @@
+{% include 'base/header.html' %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style type="text/css">
+    /* ---- Toast notifications ---- */
+    #toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+    }
+
+    .toast-msg {
+        display: flex;
+        align-items: center;
+        color: white;
+        padding: 10px 18px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+        margin-bottom: 8px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity .3s, transform .3s;
+        font-size: 13px;
+        gap: 8px;
+    }
+
+    .toast-msg.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .toast-msg.success {
+        background: #28a745;
+    }
+
+    .toast-msg.error {
+        background: #dc3545;
+    }
+
+    .toast-close {
+        margin-left: auto;
+        cursor: pointer;
+        opacity: .8;
+    }
+
+    .toast-close:hover {
+        opacity: 1;
+    }
+
+    /* ---- Period selector ---- */
+    .period-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .period-bar select {
+        font-size: 13px;
+        padding: 5px 10px;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        background: #fff;
+        color: #212529;
+        cursor: pointer;
+        appearance: auto;
+        /* let browser draw native arrow */
+    }
+
+    .period-bar select:focus {
+        outline: none;
+        border-color: #80bdff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, .2);
+    }
+
+    /* ---- Tables ---- */
+    .dept-block {
+        margin-bottom: 28px;
+    }
+
+    .dept-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: #6c757d;
+        padding: 4px 0 6px 2px;
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 0;
+    }
+
+    .salary-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+
+    .salary-table thead th {
+        background: #f0f2f5;
+        text-align: center;
+        font-weight: 600;
+        padding: 7px 8px;
+        border: 1px solid #dee2e6;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .salary-table tbody td {
+        padding: 5px 8px;
+        border: 1px solid #dee2e6;
+        vertical-align: middle;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .salary-table tbody td.name-col {
+        text-align: left;
+        font-weight: 500;
+    }
+
+    .salary-table tbody tr:nth-child(even) {
+        background: #f9fbfd;
+    }
+
+    .salary-table tbody tr:hover {
+        background: #eaf2ff;
+    }
+
+    .salary-table tfoot td {
+        background: #d9dde2;
+        font-weight: 700;
+        padding: 6px 8px;
+        border: 1px solid #cdd1d6;
+        text-align: center;
+    }
+
+    .salary-table tfoot td.name-col {
+        text-align: left;
+    }
+
+    /* info icon */
+    .ti {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        line-height: 14px;
+        text-align: center;
+        border-radius: 50%;
+        background: #b0b8c4;
+        color: #fff;
+        font-size: 9px;
+        font-style: normal;
+        font-weight: 700;
+        cursor: help;
+        vertical-align: middle;
+        margin-left: 3px;
+        user-select: none;
+    }
+
+    /* rate input */
+    .rate-wrap {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        justify-content: center;
+    }
+
+    .rate-input {
+        width: 68px;
+        font-size: 12px;
+        padding: 3px 6px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        text-align: center;
+    }
+
+    .rate-input:focus {
+        outline: none;
+        border-color: #80bdff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, .2);
+    }
+
+    .save-btn {
+        padding: 2px 7px;
+        font-size: 12px;
+        border-radius: 4px;
+        border: 1px solid #adb5bd;
+        background: #fff;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+    .save-btn:hover {
+        background: #e9ecef;
+    }
+
+    .save-btn:disabled {
+        opacity: .5;
+        cursor: default;
+    }
+
+    /* ---- Print styles ---- */
+    @media print {
+        @page {
+            size: landscape;
+            margin: 5mm;
+        }
+
+        .period-bar,
+        .save-btn,
+        .ti,
+        .page-title,
+        .toast-msg,
+        #toast-container,
+        .ms-3.d-flex.align-items-center {
+            display: none !important;
+        }
+
+        body {
+            background: white !important;
+            color: black !important;
+            margin: 0;
+            padding: 0;
+            font-family: "DejaVu Serif", "Times New Roman", serif;
+        }
+
+        .container-fluid {
+            width: 100% !important;
+            padding: 0 !important;
+        }
+
+        .card,
+        .card-body {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .table-responsive {
+            overflow: visible !important;
+        }
+
+        .salary-table {
+            border: 2px solid black !important;
+            width: 100% !important;
+        }
+
+        .salary-table thead th {
+            background-color: #eee !important;
+            color: black !important;
+            border: 1px solid black !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .salary-table tbody td,
+        .salary-table tfoot td {
+            background-color: transparent !important;
+            color: black !important;
+            border: 1px solid black !important;
+        }
+
+        .salary-table tfoot td {
+            background-color: #ddd !important;
+            font-weight: bold !important;
+            -webkit-print-color-adjust: exact;
+        }
+
+        .rate-input {
+            border: none !important;
+            background: transparent !important;
+            padding: 0 !important;
+            font-size: inherit !important;
+            width: 100% !important;
+            text-align: center !important;
+            appearance: none !important;
+            -moz-appearance: textfield !important;
+        }
+
+        .rate-input::-webkit-outer-spin-button,
+        .rate-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .dept-label {
+            color: black !important;
+            border-bottom: 2px solid black !important;
+            font-size: 14px !important;
+            margin-top: 15px !important;
+        }
+
+        .print-only-header {
+            display: block !important;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .print-only-header h2 {
+            margin: 0;
+            padding: 0;
+            font-size: 18px;
+        }
+    }
+
+    .print-only-header {
+        display: none;
+    }
+
+    .row-hidden {
+        display: none !important;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="print-only-header">
+        <h2>Фінансовий звіт за {{ current_month }}.{{ current_year }}</h2>
+    </div>
+
+    <!-- Header + period -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-flex align-items-center justify-content-between">
+                <h4 class="page-title mb-0">Фінансовий звіт</h4>
+                <div class="period-bar">
+                    <label style="font-size:13px;color:#666;margin:0">Місяць:</label>
+                    <select id="month-select" onchange="updateReport()">
+                        <option value="1" {% if current_month==1 %}selected{% endif %}>Січень</option>
+                        <option value="2" {% if current_month==2 %}selected{% endif %}>Лютий</option>
+                        <option value="3" {% if current_month==3 %}selected{% endif %}>Березень</option>
+                        <option value="4" {% if current_month==4 %}selected{% endif %}>Квітень</option>
+                        <option value="5" {% if current_month==5 %}selected{% endif %}>Травень</option>
+                        <option value="6" {% if current_month==6 %}selected{% endif %}>Червень</option>
+                        <option value="7" {% if current_month==7 %}selected{% endif %}>Липень</option>
+                        <option value="8" {% if current_month==8 %}selected{% endif %}>Серпень</option>
+                        <option value="9" {% if current_month==9 %}selected{% endif %}>Вересень</option>
+                        <option value="10" {% if current_month==10 %}selected{% endif %}>Жовтень</option>
+                        <option value="11" {% if current_month==11 %}selected{% endif %}>Листопад</option>
+                        <option value="12" {% if current_month==12 %}selected{% endif %}>Грудень</option>
+                    </select>
+                    <select id="year-select" onchange="updateReport()">
+                        {% for y in range(current_year-2, current_year+2) %}
+                        <option value="{{ y }}" {% if y==current_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <div class="ms-3 d-flex align-items-center" style="font-size:13px; color:#666">
+                        <input type="checkbox" id="show-all-chk"
+                            style="margin-right:5px; transform: scale(1.1); cursor:pointer">
+                        <label for="show-all-chk" style="margin:0; cursor:pointer"
+                            title="Показувати тільки тих, у кого є лікарняні або відпустки">Показати всіх</label>
+                    </div>
+
+                    <a class="btn btn-sm btn-success ms-4"
+                        href="/salary-report/pdf?month={{ current_month }}&year={{ current_year }}" target="_blank"
+                        style="font-size:12px">
+                        <i class="fa fa-file-pdf"></i> Скачати в PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+
+                    {# ========================
+                    NON-STUDENTS grouped by department
+                    ======================== #}
+                    {% for dept, members in users_info | selectattr('salary_report.is_student', 'equalto', false) | list
+                    | groupby('user_departament') %}
+                    <div class="dept-block">
+                        <p class="dept-label">{{ dept }}</p>
+                        <div class="table-responsive">
+                            <table class="salary-table">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="2" style="min-width:140px">ФІО</th>
+                                        <th rowspan="2">
+                                            Фонд год
+                                            <i class="ti"
+                                                title="Заплановані робочі години за місяць згідно табелю (сума plan_work).">i</i>
+                                        </th>
+                                        <th rowspan="2">
+                                            Факт год
+                                            <i class="ti"
+                                                title="Фактично відпрацьовані години — сума за весь місяць.">i</i>
+                                        </th>
+                                        <th rowspan="2">
+                                            Ставка/год
+                                            <i class="ti"
+                                                title="Погодинна ставка в гривнях. Змінюйте і натискайте 💾.">i</i>
+                                        </th>
+                                        <th colspan="2">
+                                            Хворіє
+                                            <i class="ti"
+                                                title="Іконка (dripicons-medical) в календарі — 'Хворіє' без лікарняного листа. Юніти = План годин дня × Ставка × 0.8">i</i>
+                                        </th>
+                                        <th colspan="2">
+                                            Хворіє з лікарняним
+                                            <i class="ti"
+                                                title="Іконка (dripicons-pulse) в календарі — 'Хворіє з лікарняним' листом. Юніти = План годин дня × Ставка × 0.8">i</i>
+                                        </th>
+                                        <th colspan="3">
+                                            Відпустка
+                                            <i class="ti"
+                                                title="Іконки vacation (dripicons-gaming) в календарі — оплачувана відпустка. Юніти = План годин дня × сер.вартість × 0.8">i</i>
+                                        </th>
+                                        <th colspan="3">
+                                            Навчання
+                                            <i class="ti"
+                                                title="Години навчання: (Повні дні × План год) + Додаткові години навчання. Юніти = Години × Ставка × 0.8">i</i>
+                                        </th>
+                                        <th rowspan="2">
+                                            Разом юнітів
+                                            <i class="ti" title="Сума нарахованих юнітів (тільки за хвороби).">i</i>
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        <th>Дні</th>
+                                        <th>Юніти</th>
+                                        <th>Дні</th>
+                                        <th>Юніти</th>
+                                        <th>Дні</th>
+                                        <th>Ставка</th>
+                                        <th>Юніти</th>
+                                        <th>Години</th>
+                                        <th>Ставка</th>
+                                        <th>Юніти</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for info in members %}
+                                    {% set has_reason = (info.salary_report.sick_no_cert.days > 0) or
+                                    (info.salary_report.sick_with_cert.days > 0) or
+                                    (info.salary_report.vacation.days > 0) or
+                                    (info.salary_report.training.hours > 0) %}
+                                    <tr class="mech-row {% if not has_reason %}no-reason-row row-hidden{% endif %}"
+                                        data-userid="{{ info.user_id }}"
+                                        data-sick-no-plan="{{ info.salary_report.sick_no_cert.plan }}"
+                                        data-sick-cert-plan="{{ info.salary_report.sick_with_cert.plan }}"
+                                        data-vacation-plan="{{ info.salary_report.vacation.plan }}"
+                                        data-training-plan="{{ info.salary_report.training.plan }}"
+                                        data-training-extra="{{ info.salary_report.extra_training_hours }}"
+                                        data-sick-mult="{{ info.salary_report.sick_mult }}"
+                                        data-vac-mult="{{ info.salary_report.vacation_mult }}"
+                                        data-train-mult="{{ info.salary_report.training_mult }}">
+                                        <td class="name-col">{{ info.user_name }}</td>
+                                        <td>{{ info.plan_work }}</td>
+                                        <td>{{ info.fact_work }}</td>
+                                        <td>
+                                            <div class="rate-wrap">
+                                                <input type="number" class="rate-input" data-userid="{{ info.user_id }}"
+                                                    data-type="hourly" value="{{ info.salary_report.hourly_rate }}">
+                                                <button class="save-btn save-rate" type="button">💾</button>
+                                            </div>
+                                        </td>
+                                        <td>{{ info.salary_report.sick_no_cert.days }}</td>
+                                        <td class="td-sick-no-units">{{ info.salary_report.sick_no_cert.units }}</td>
+                                        <td>{{ info.salary_report.sick_with_cert.days }}</td>
+                                        <td class="td-sick-cert-units">{{ info.salary_report.sick_with_cert.units }}
+                                        </td>
+                                        <td>{{ info.salary_report.vacation.days }}</td>
+                                        <td class="vac-rate-td">
+                                            <div class="rate-wrap">
+                                                <input type="number" class="rate-input vac-rate"
+                                                    data-userid="{{ info.user_id }}" data-type="vacation_avg_rate"
+                                                    value="{{ info.salary_report.vacation_avg_rate }}">
+                                                <button class="save-btn save-rate" type="button">💾</button>
+                                            </div>
+                                        </td>
+                                        <td class="td-vac-units">{{ info.salary_report.vacation.units }}</td>
+                                        <td>{{ info.salary_report.training.hours }}</td>
+                                        <td>
+                                            <div class="rate-wrap">
+                                                <input type="number" class="rate-input train-rate"
+                                                    data-userid="{{ info.user_id }}" data-type="vacation_avg_rate"
+                                                    value="{{ info.salary_report.vacation_avg_rate }}">
+                                                <button class="save-btn save-rate" type="button">💾</button>
+                                            </div>
+                                        </td>
+                                        <td class="td-train-units">{{ info.salary_report.training.units }}</td>
+                                        <td class="u-total td-total-mech">{{ info.salary_report.total_units_mech }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="mech-tfoot">
+                                        <td class="name-col">Разом:</td>
+                                        <td>{% set p=[] %}{% for r in members %}{{ p.append(r.plan_work|float) or "" }}{% endfor %}{{ p|sum|round(1) }}</td>
+                                        <td>{% set f=[] %}{% for r in members %}{{ f.append(r.fact_work|float) or "" }}{% endfor %}{{ f|sum|round(1) }}</td>
+                                        <td></td>
+                                        {# Sick No Cert #}
+                                        <td></td>
+                                        <td>{% set s1=[] %}{% for r in members %}{{ s1.append(r.salary_report.sick_no_cert.units|float) or "" }}{% endfor %}{{ s1|sum|round(2) }}</td>
+                                        {# Sick With Cert #}
+                                        <td></td>
+                                        <td>{% set s2=[] %}{% for r in members %}{{ s2.append(r.salary_report.sick_with_cert.units|float) or "" }}{% endfor %}{{ s2|sum|round(2) }}</td>
+                                        {# Vacation #}
+                                        <td></td>
+                                        <td></td>
+                                        <td>{% set v=[] %}{% for r in members %}{{ v.append(r.salary_report.vacation.units|float) or "" }}{% endfor %}{{ v|sum|round(2) }}</td>
+                                        {# Training #}
+                                        <td></td>
+                                        <td></td>
+                                        <td>{% set t=[] %}{% for r in members %}{{ t.append(r.salary_report.training.units|float) or "" }}{% endfor %}{{ t|sum|round(2) }}</td>
+                                        <td class="td-tfoot-total">{% set u=[] %}{% for r in members %}{{ u.append(r.salary_report.total_units_mech|float) or "" }}{% endfor %}{{ u|sum|round(2) }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    {# ========================
+                    STUDENTS
+                    ======================== #}
+                    {% set students = users_info | selectattr('salary_report.is_student', 'equalto', true) | list %}
+                    {% if students %}
+                    <div class="dept-block">
+                        <p class="dept-label">Студенти</p>
+                        <div class="table-responsive">
+                            <table class="salary-table" id="students-table">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width:140px">ФІО</th>
+                                        <th>
+                                            Фонд год (план)
+                                            <i class="ti"
+                                                title="Прогнозний фонд за повний місяць (дзеркально за графіком об'єкта).">i</i>
+                                        </th>
+                                        <th>
+                                            Факт год
+                                            <i class="ti" title="Сума фактично відпрацьованих годин.">i</i>
+                                        </th>
+                                        <th>
+                                            Днів присутності
+                                            <i class="ti"
+                                                title="Кількість днів, у яких факт роботи >= 1 год (рахується до сьогоднішньої дати).">i</i>
+                                        </th>
+                                        <th>
+                                            Роб. днів у міс.
+                                            <i class="ti" title="Кількість будніх днів (Пн–Пт) у місяці.">i</i>
+                                        </th>
+                                        <th>
+                                            Норма ₴/год
+                                            <i class="ti"
+                                                title="Норма = Місячна ставка ÷ Фонд годин (план). Вартість однієї відпрацьованої години.">i</i>
+                                        </th>
+                                        <th>
+                                            Юніти
+                                            <i class="ti"
+                                                title="Розрахунок: (Ставка / Фонд годин (план)) × Факт годин.">i</i>
+                                        </th>
+                                        <th>
+                                            Ставка/міс.
+                                            <i class="ti"
+                                                title="Місячна ставка в гривнях. Змінюйте і натискайте 💾.">i</i>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for info in students %}
+                                    {% set plan_h = info.plan_work | float %}
+                                    {% set rate_m = info.salary_report.monthly_rate | float %}
+                                    {% set norma = (rate_m / plan_h) | round(2) if plan_h > 0 else 0 %}
+                                    {% set has_reason = info.fact_work > 0 %}
+                                    <tr class="student-row" data-userid="{{ info.user_id }}"
+                                        data-plan="{{ info.plan_work }}" data-fact="{{ info.fact_work }}"
+                                        data-train-extra="{{ info.salary_report.extra_training_hours }}">
+                                        <td class="name-col">{{ info.user_name }}</td>
+                                        <td>{{ info.plan_work }}</td>
+                                        <td>{{ info.fact_work }}</td>
+                                        <td>{{ info.count_day_in_work }}</td>
+                                        <td>{{ info.salary_report.month_working_days }}</td>
+                                        <td class="td-norma">{{ norma }}</td>
+                                        <td class="u-total td-student-units">{{ info.salary_report.student_units }}</td>
+                                        <td>
+                                            <div class="rate-wrap">
+                                                <input type="number" class="rate-input" style="width:85px"
+                                                    data-userid="{{ info.user_id }}" data-type="monthly"
+                                                    value="{{ info.salary_report.monthly_rate }}">
+                                                <button class="save-btn save-rate" type="button">💾</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr id="students-tfoot">
+                                        <td class="name-col">Разом:</td>
+                                        <td>{% set sp=[] %}{% for r in students %}{{ sp.append(r.plan_work|float) or ""
+                                            }}{% endfor %}{{ sp|sum|round(1) }}</td>
+                                        <td>{% set sf=[] %}{% for r in students %}{{ sf.append(r.fact_work|float) or ""
+                                            }}{% endfor %}{{ sf|sum|round(1) }}</td>
+                                        <td>{% set sd=[] %}{% for r in students %}{{ sd.append(r.count_day_in_work|int)
+                                            or "" }}{% endfor %}{{ sd|sum }}</td>
+                                        <td colspan="2"></td>
+                                        <td class="td-tfoot-student-units">{% set su=[] %}{% for r in students %}{{
+                                            su.append(r.salary_report.student_units|float) or "" }}{% endfor %}{{
+                                            su|sum|round(2) }}</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div><!-- /card-body -->
+            </div><!-- /card -->
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+    function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        const el = document.createElement("div");
+        el.className = `toast-msg ${type}`;
+        el.innerHTML = `<span>${message}</span><span class="toast-close" onclick="this.parentElement.remove()">✕</span>`;
+        container.appendChild(el);
+        requestAnimationFrame(() => el.classList.add("show"));
+        setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 350); }, 3000);
+    }
+
+    function updateReport() {
+        const month = document.getElementById('month-select').value;
+        const year = document.getElementById('year-select').value;
+        window.location.href = `/salary-report?month=${month}&year=${year}`;
+    }
+
+    /* Native tooltip on hover for .ti elements */
+    document.querySelectorAll('.ti[title]').forEach(el => {
+        el.addEventListener('mouseenter', function () {
+            const box = this.getBoundingClientRect();
+            const tip = document.createElement('div');
+            tip.className = 'custom-tip';
+            tip.textContent = this.title;
+            tip.style.cssText = `
+            position:fixed;left:${box.left + box.width / 2}px;top:${box.top - 8}px;
+            transform:translate(-50%,-100%);background:#333;color:#fff;
+            font-size:12px;padding:6px 10px;border-radius:5px;
+            max-width:280px;white-space:normal;line-height:1.4;z-index:9999;
+            box-shadow:0 2px 8px rgba(0,0,0,.25);pointer-events:none;
+        `;
+            document.body.appendChild(tip);
+            this._tip = tip;
+        });
+        el.addEventListener('mouseleave', function () {
+            if (this._tip) { this._tip.remove(); this._tip = null; }
+        });
+    });
+
+    /* ── Live recalculation after save ── */
+
+    function round2(v) { return Math.round(v * 100) / 100; }
+
+    /* Recalculate one mechanics row and update its cells + tfoot */
+    function recalcMechRow(row, newRate) {
+        const d = row.dataset;
+        const rate = parseFloat(newRate);
+
+        const sickNoPlan = parseFloat(d.sickNoPlan) || 0;
+        const sickCertPlan = parseFloat(d.sickCertPlan) || 0;
+        const vacPlan = parseFloat(d.vacationPlan) || 0;
+        const trainExtra = parseFloat(d.trainingExtra) || 0;
+        const sickMult = parseFloat(d.sickMult) || 1;
+        const vacMult = parseFloat(d.vacMult) || 0.8;
+        const trainMult = parseFloat(d.trainMult) || 0.8;
+
+        /* Vacation and Training use the same rate */
+        const vacRateInput = row.querySelector('.vac-rate');
+        const trainRateInput = row.querySelector('.train-rate');
+
+        let vacRate = parseFloat(newRate) || 0;
+
+        /* Visually sync both inputs if they exist */
+        if (vacRateInput) vacRateInput.value = vacRate;
+        if (trainRateInput) trainRateInput.value = vacRate;
+
+        const trainRate = vacRate;
+        const trainHours = parseFloat(d.trainingPlan || 0) + (parseFloat(d.trainingExtra) || 0);
+
+        const sickNoUnits = round2(sickNoPlan * rate * sickMult);
+        const sickCertUnits = round2(sickCertPlan * rate * sickMult);
+        const vacUnits = round2(vacPlan * vacRate * vacMult);
+        const trainUnits = round2(trainHours * trainRate * trainMult);
+
+        const total = round2(sickNoUnits + sickCertUnits + vacUnits + trainUnits);
+
+        const sickNoEl = row.querySelector('.td-sick-no-units');
+        const sickCertEl = row.querySelector('.td-sick-cert-units');
+        const vacEl = row.querySelector('.td-vac-units');
+        const trainEl = row.querySelector('.td-train-units');
+        const totalEl = row.querySelector('.td-total-mech');
+
+        if (sickNoEl) sickNoEl.textContent = sickNoUnits;
+        if (sickCertEl) sickCertEl.textContent = sickCertUnits;
+        if (vacEl) vacEl.textContent = vacUnits;
+        if (trainEl) trainEl.textContent = trainUnits;
+        if (totalEl) totalEl.textContent = total;
+
+        /* Update tfoot in the same table */
+        const tbody = row.closest('tbody');
+        const tfoot = row.closest('table').querySelector('.td-tfoot-total');
+        if (tfoot) {
+            let sum = 0;
+            tbody.querySelectorAll('.td-total-mech').forEach(td => {
+                sum += parseFloat(td.textContent) || 0;
+            });
+            tfoot.textContent = round2(sum);
+        }
+    }
+
+    /* Recalculate one student row */
+    function recalcStudentRow(row, newRate) {
+        const plan = parseFloat(row.dataset.plan) || 0;
+        const fact = parseFloat(row.dataset.fact) || 0;
+        const trainExtra = parseFloat(row.dataset.trainExtra) || 0;
+        const rate = parseFloat(newRate);
+
+        const norma = plan > 0 ? round2(rate / plan) : 0;
+        const units = round2(norma * fact);
+
+        row.querySelector('.td-norma').textContent = norma;
+        row.querySelector('.td-student-units').textContent = units;
+
+        /* Update students tfoot */
+        const tbody = row.closest('tbody');
+        const tfoot = row.closest('table').querySelector('.td-tfoot-student-units');
+        if (tfoot) {
+            let sum = 0;
+            tbody.querySelectorAll('.td-student-units').forEach(td => {
+                sum += parseFloat(td.textContent) || 0;
+            });
+            tfoot.textContent = round2(sum);
+        }
+    }
+
+    /* Save rate handler */
+    document.querySelectorAll('.save-rate').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const input = this.closest('.rate-wrap').querySelector('.rate-input');
+            const userId = input.dataset.userid;
+            const type = input.dataset.type;
+            const val = input.value;
+            const row = this.closest('tr');
+
+            const body = { user_id: userId };
+            if (type === 'hourly') body.hourly_rate = val;
+            else if (type === 'monthly') body.monthly_rate = val;
+            else if (type === 'vacation_avg_rate') body.vacation_avg_rate = val;
+
+            const self = this;
+            self.disabled = true;
+            self.textContent = '⏳';
+
+            fetch('/api/update_salary_settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+                .then(r => r.json())
+                .then(result => {
+                    if (result.success) {
+                        showToast('Ставку збережено!', 'success');
+                        self.textContent = '✅';
+                        setTimeout(() => { self.textContent = '💾'; self.disabled = false; }, 1500);
+
+                        /* Live recalculate without reload */
+                        if (type === 'hourly' || type === 'vacation_avg_rate') {
+                            recalcMechRow(row, val);
+                        } else {
+                            recalcStudentRow(row, val);
+                        }
+                    } else {
+                        showToast('Помилка: ' + result.error, 'error');
+                        self.disabled = false;
+                        self.textContent = '💾';
+                    }
+                })
+                .catch(() => {
+                    showToast("Помилка з'єднання", 'error');
+                    self.disabled = false;
+                    self.textContent = '💾';
+                });
+        });
+    });
+    /* ── Show All Toggle ── */
+    function updateDeptsVisibility() {
+        document.querySelectorAll('.dept-block').forEach(block => {
+            // skip if it's the students table
+            if (block.querySelector('#students-table')) return;
+
+            const visibleRows = block.querySelectorAll('.mech-row:not(.row-hidden)');
+            if (visibleRows.length === 0) {
+                block.style.display = 'none';
+            } else {
+                block.style.display = 'block';
+            }
+        });
+    }
+
+    const showAllChk = document.getElementById('show-all-chk');
+    if (showAllChk) {
+        showAllChk.addEventListener('change', function () {
+            const showAll = this.checked;
+            document.querySelectorAll('.no-reason-row').forEach(row => {
+                if (showAll) {
+                    row.classList.remove('row-hidden');
+                } else {
+                    row.classList.add('row-hidden');
+                }
+            });
+            updateDeptsVisibility();
+        });
+        // Initial setup
+        updateDeptsVisibility();
+    }
+</script>
+
+
+{% include 'base/footer.html' %}

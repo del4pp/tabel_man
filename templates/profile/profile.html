@@ -9,7 +9,7 @@
          <div class="page-title-box">
             <div class="page-title-right">
                <ol class="breadcrumb m-0">
-                  <li class="breadcrumb-item"><a href="javascript: void(0);">MAN</a></li>
+                  <li class="breadcrumb-item"><a href="javascript: void(0);">Scania</a></li>
                   <li class="breadcrumb-item"><a href="javascript: void(0);">Pages</a></li>
                   <li class="breadcrumb-item active">Profile</li>
                </ol>
@@ -134,12 +134,27 @@
                      </button><br><br>-->
                      {% endif %}
 
-                     {% if user_info.id == 11 %}
+                     {% if user_info.id in [11, 44] %}
                      <button type="button" class="btn btn-light" data-bs-toggle="modal"
                         data-bs-target="#access-head-modal" style="width: 100%;">
                         <i class="fas fa-user-tie me-1"></i> Призначити керівника
                      </button><br><br>
                      {% endif %}
+
+                      {% if user_info.id in [11, 44] %}
+                      <button type="button" class="btn btn-light" data-bs-toggle="modal"
+                         data-bs-target="#salary-report-modal" style="width: 100%;" id="salary-report-btn">
+                         <i class="fas fa-file-invoice-dollar me-1"></i> Фінзвіт:
+                         {% if salary_settings.is_student %}
+                            <span class="badge bg-info ms-1">Студенти</span>
+                         {% elif salary_settings.in_salary_report %}
+                            <span class="badge bg-success ms-1">Механіки</span>
+                         {% else %}
+                            <span class="badge bg-secondary ms-1">Вимкнено</span>
+                         {% endif %}
+                      </button><br><br>
+                      {% endif %}
+
                      <a href="repass-{{profile_info.id}}" type="button" class="btn btn-light" style="width: 100%;">
                         <i class="fas fa-key me-1"></i> Скинути пароль
                      </a>
@@ -294,6 +309,154 @@
             <!-- end col -->
          </div>
          <!-- end row -->
+
+         <!-- Debug Information Block -->
+         <div class="row">
+            <div class="col-12">
+               <div class="card bg-light">
+                  <div class="card-body">
+                     <h5 class="card-title text-muted" style="cursor: pointer;" data-bs-toggle="collapse"
+                        data-bs-target="#debugVacationInfo" aria-expanded="false" aria-controls="debugVacationInfo">
+                        <i class="mdi mdi-bug-outline me-1"></i> Деталізація розрахунку відпустки (Debug Info)
+                        <small class="text-muted" style="font-size: 0.7em;">(натисніть, щоб розгорнути)</small>
+                     </h5>
+                     <div class="collapse" id="debugVacationInfo">
+                        <div class="table-responsive mt-3">
+                           <table class="table table-sm table-bordered mb-0">
+                              <thead class="table-dark">
+                                 <tr>
+                                    <th>Показник</th>
+                                    <th>Значення</th>
+                                    <th>Опис</th>
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 <tr>
+                                    <td><strong>Всього нараховано за минулі роки</strong></td>
+                                    <td>{{ vacation_debug.initial_before_vacation_sum }}</td>
+                                    <td>Сума всіх нарахувань до {{ year_now }} року.</td>
+                                 </tr>
+                                 <tr>
+                                    <td><strong>Використано до {{ year_now }} року</strong></td>
+                                    <td>{{ vacation_debug.initial_used_before }}</td>
+                                    <td>Кількість днів, відгуляних або компенсованих грошима до 1 січня {{ year_now }}.
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td><strong>Анульовано до {{ year_now }} року</strong></td>
+                                    <td>{{ vacation_debug.initial_canceled_before }}</td>
+                                    <td>Дні, які були анульовані адміністратором до 1 січня {{ year_now }}.</td>
+                                 </tr>
+                                 <tr class="table-info">
+                                    <td><strong>Баланс на 1 січня {{ year_now }}</strong></td>
+                                    <td><strong>{{ vacation_debug.available_from_prev_years_start }}</strong></td>
+                                    <td>Початковий залишок з минулих років (Нараховано - Використано - Анульовано).</td>
+                                 </tr>
+                                 <tr>
+                                    <td><strong>Бюджет на {{ year_now }} рік</strong></td>
+                                    <td>{{ vacation_debug.budget_this_year }}</td>
+                                    <td>Нараховано днів відпустки на поточний рік.</td>
+                                 </tr>
+                                 <tr>
+                                    <td><strong>Використано в {{ year_now }} (всього)</strong></td>
+                                    <td>{{ vacation_debug.total_usage_this_year }}</td>
+                                    <td>Сума: Відпустка ({{ vacation_debug.used_vacation_this_year }}) + Компенсація ({{
+                                       vacation_debug.used_compensation_this_year }}) + Анулювання ({{
+                                       vacation_debug.count_canceled_days_this_year }}).</td>
+                                 </tr>
+                                 <tr class="table-success">
+                                    <td><strong>РЕАЛЬНИЙ ЗАЛИШОК СЬОГОДНІ</strong></td>
+                                    <td><strong>{{ vacation_debug.diff_vacation_total }}</strong></td>
+                                    <td>(Баланс з минулого + Бюджет {{ year_now }}) - Використання в {{ year_now }}.
+                                    </td>
+                                 </tr>
+                                 <tr>
+                                    <td><strong>Заброньовано на наступний рік</strong></td>
+                                    <td>{{ vacation_debug.planned_next_year }}</td>
+                                    <td>Дні відпустки, які вже внесені в календар на {{ year_now + 1 }} рік.</td>
+                                 </tr>
+                                 <tr>
+                                    <td><strong>Анульовано на наступний рік</strong></td>
+                                    <td>{{ vacation_debug.count_canceled_next_year }}</td>
+                                    <td>Дні, анульовані наперед на {{ year_now + 1 }} рік.</td>
+                                 </tr>
+                                 <tr class="table-warning">
+                                    <td><strong>ПЕРЕХІД НА НАСТУПНИЙ РІК</strong></td>
+                                    <td><strong>{{ vacation_debug.diff_vacation_next_year }}</strong></td>
+                                    <td>Реальний залишок сьогодні - (Заброньовано + Анульовано на майбутнє).</td>
+                                 </tr>
+                              </tbody>
+                           </table>
+                        </div>
+
+                        <h6 class="mt-4 text-muted">Початкові дані по роках (Raw Stats)</h6>
+                        <div class="table-responsive">
+                           <table class="table table-sm table-hover table-bordered mb-0">
+                              <thead class="table-secondary">
+                                 <tr>
+                                    <th>Рік</th>
+                                    <th>Нараховано (Бюджет)</th>
+                                    <th>Використано (Факт)</th>
+                                    <th>Анульовано</th>
+                                    <th>Залишок на кінець року</th>
+                                 </tr>
+                              </thead>
+                              <tbody>
+                                 {% for vac in vacation_list|reverse %}
+                                 <tr>
+                                    <td>{{ vac.year }}</td>
+                                    <td>{{ vac.count_days }}</td>
+                                    <td>{{ vac.used_days }}</td>
+                                    <td>{{ vac.canceled_days }}</td>
+                                    <td>{{ vac.count_days - vac.used_days - vac.canceled_days }}</td>
+                                 </tr>
+                                 {% endfor %}
+                              </tbody>
+                           </table>
+                        </div>
+
+                        <div class="row mt-4">
+                           <div class="col-md-6">
+                              <h6 class="text-muted">Дати відпусток ({{ year_now }})</h6>
+                              <div class="list-group list-group-flush border rounded"
+                                 style="max-height: 200px; overflow-y: auto;">
+                                 {% if list_vacation %}
+                                 {% for seq in list_vacation %}
+                                 <div class="list-group-item d-flex justify-content-between p-2">
+                                    <span>{{ seq.start_date.strftime('%d.%m.%Y') }} - {{
+                                       seq.end_date.strftime('%d.%m.%Y') }}</span>
+                                    <span class="badge bg-primary rounded-pill">{{ (seq.end_date - seq.start_date).days
+                                       + 1 }} дн.</span>
+                                 </div>
+                                 {% endfor %}
+                                 {% else %}
+                                 <div class="list-group-item text-center text-muted p-2 small">Записів не знайдено</div>
+                                 {% endif %}
+                              </div>
+                           </div>
+                           <div class="col-md-6">
+                              <h6 class="text-muted">Дати компенсацій ({{ year_now }})</h6>
+                              <div class="list-group list-group-flush border rounded"
+                                 style="max-height: 200px; overflow-y: auto;">
+                                 {% if vacation_debug.comp_records %}
+                                 {% for date_str in vacation_debug.comp_records %}
+                                 <div class="list-group-item p-2 small mdi mdi-calendar-check text-success">
+                                    {{ date_str }} — 1 день
+                                 </div>
+                                 {% endfor %}
+                                 {% else %}
+                                 <div class="list-group-item text-center text-muted p-2 small">Записів не знайдено</div>
+                                 {% endif %}
+                              </div>
+                           </div>
+                        </div>
+
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+
          <div class="row">
             {% for vacation in list_vacation %}
             <div class="col-sm-4">
@@ -324,6 +487,48 @@
    <!-- end row -->
 </div>
 <!-- container -->
+<!-- Salary Report Modal -->
+<div id="salary-report-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h4 class="modal-title">Фінзвіт</h4>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-hidden="true"></button>
+         </div>
+         <div class="modal-body">
+            <p class="text-muted mb-3">Налаштуйте параметри доступу та відображення працівника.</p>
+            
+            <div class="mb-3 form-check form-switch border-bottom pb-2">
+               <input class="form-check-input" type="checkbox" role="switch" id="can-view-report-toggle"
+                  {% if salary_settings.can_view_report %}checked{% endif %}>
+               <label class="form-check-label fw-bold" for="can-view-report-toggle">
+                  Може переглядати звіт
+               </label>
+               <div class="form-text">Дає право заходити в загальну таблицю "Фінзвіт"</div>
+            </div>
+
+            <div class="mb-2 form-check form-switch">
+               <input class="form-check-input" type="checkbox" role="switch" id="salary-report-toggle"
+                  {% if salary_settings.in_salary_report %}checked{% endif %}>
+               <label class="form-check-label" for="salary-report-toggle">Включити у звіт (основна таблиця)</label>
+            </div>
+            <div class="mb-3 form-check form-switch">
+               <input class="form-check-input" type="checkbox" role="switch" id="salary-student-toggle"
+                  {% if salary_settings.is_student %}checked{% endif %}>
+               <label class="form-check-label" for="salary-student-toggle">Студент (виводити в розділ студентів)</label>
+            </div>
+            <div id="salary-save-status" class="mt-2" style="display:none;"></div>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Закрити</button>
+            <button type="button" class="btn btn-primary" id="salary-report-save-btn">
+               <i class="fas fa-save me-1"></i> Зберегти
+            </button>
+         </div>
+      </div>
+   </div>
+</div>
+
 <div id="access-head-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="access-head-modalLabel"
    aria-hidden="true">
    <form method="post" action="/update-access-head">
@@ -425,7 +630,7 @@
                   <label for="vacation-year" class="form-label">Рік</label>
                   <input type="hidden" name="user_id" value="{{user_id}}">
                   <input class="form-control" id="vacation-year" type="number" name="vacation_year" min="2023"
-                     max="2100">
+                     max="2100" value="{{year_now}}">
                </div>
                <div class="mb-3">
                   <label for="vacation-days" class="form-label">Кількість днів відпустки</label>
@@ -458,7 +663,7 @@
                   <label for="vacation-year" class="form-label">Рік</label>
                   <input type="hidden" name="user_id" value="{{ user_id }}">
                   <input class="form-control" id="vacation-year" type="number" name="canceled_year" min="2023"
-                     max="2100" required>
+                     max="2100" value="{{year_now}}" required>
                </div>
                <div class="mb-3">
                   <label for="vacation-days" class="form-label">Кількість днів відпустки які треба анулювати</label>
@@ -815,6 +1020,53 @@
       $('[data-bs-toggle="tooltip"]').tooltip();
    });
 
+   // Збереження налаштувань фін. звіту
+   document.getElementById('salary-report-save-btn')?.addEventListener('click', function () {
+      const inReport  = document.getElementById('salary-report-toggle').checked;
+      const isStudent = document.getElementById('salary-student-toggle').checked;
+      const canView   = document.getElementById('can-view-report-toggle').checked;
+      const statusEl  = document.getElementById('salary-save-status');
+
+      fetch('/api/update_salary_settings', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+            user_id: {{ user_id }},
+            inSalaryReport: inReport,
+            isStudent: isStudent,
+            can_view_report: canView
+         })
+      })
+      .then(r => r.json())
+      .then(data => {
+         if (data.success) {
+            statusEl.innerHTML = '<span class="text-success"><i class="fas fa-check me-1"></i>Збережено</span>';
+            statusEl.style.display = 'block';
+            // Оновити badge на кнопці без перезавантаження
+            const badge = document.querySelector('#salary-report-btn .badge');
+            if (badge) {
+               if (isStudent) {
+                  badge.className = 'badge bg-info ms-1';
+                  badge.textContent = 'Студенти';
+               } else if (inReport) {
+                  badge.className = 'badge bg-success ms-1';
+                  badge.textContent = 'Механіки';
+               } else {
+                  badge.className = 'badge bg-secondary ms-1';
+                  badge.textContent = 'Вимкнено';
+               }
+            }
+            setTimeout(() => { statusEl.style.display = 'none'; }, 2000);
+         } else {
+            statusEl.innerHTML = '<span class="text-danger">Помилка збереження</span>';
+            statusEl.style.display = 'block';
+         }
+      })
+      .catch(() => {
+         statusEl.innerHTML = '<span class="text-danger">Помилка з\'єднання</span>';
+         statusEl.style.display = 'block';
+      });
+   });
 
 </script>
 {% include 'base/footer.html' %}
