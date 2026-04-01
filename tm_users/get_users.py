@@ -192,7 +192,7 @@ class UserAuto:
     from calendar import monthrange, calendar
     from sqlalchemy import func, extract, and_, or_, outerjoin, select
     from application import db
-    from model import user_salary_settings, salary_report_monthly, fuel_technoforum, users, user_car, fuel_limits, \
+    from model import user_salary_settings, fuel_technoforum, users, user_car, fuel_limits, \
         company_list, calendar_work, fuel_data
 
     def get_refuel_num_in_month(self, month: int, user_id: int):
@@ -1809,16 +1809,7 @@ class Users:
                     training_days += 1
 
             # --- Check Monthly Override ---
-            monthly_data = salary_report_monthly.query.filter_by(
-                user_id=user.id,
-                month=date_start.month,
-                year=date_start.year
-            ).first()
 
-            if monthly_data and monthly_data.sick_days is not None:
-                # Override prioritized
-                sick_days = monthly_data.sick_days
-                sick_plan = sick_days * (salary_settings.hours_per_day or 10.0)
             # ------------------------------
 
             extra_training_hours = db.session.query(func.sum(training_records.hours)).filter(
