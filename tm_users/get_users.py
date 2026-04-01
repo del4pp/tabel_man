@@ -23,6 +23,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+
 class UserAuto:
     def __init__(self, user_id):
         self.user_id = user_id
@@ -61,7 +62,6 @@ class UserAuto:
 
         db.session.commit()
         db.session.close()
-
 
     def add_user_fuel_month_limit(self, limit):
         check_month_limit = fuel_limits.query.filter_by(user_id=self.user_id).first()
@@ -192,7 +192,8 @@ class UserAuto:
     from calendar import monthrange, calendar
     from sqlalchemy import func, extract, and_, or_, outerjoin, select
     from application import db
-    from model import fuel_technoforum, users, user_car, fuel_limits, company_list, calendar_work, fuel_data
+    from model import user_salary_settings, salary_report_monthly, fuel_technoforum, users, user_car, fuel_limits, \
+        company_list, calendar_work, fuel_data
 
     def get_refuel_num_in_month(self, month: int, user_id: int):
         # Визначаємо початок і кінець місяця
@@ -421,7 +422,7 @@ class UserAuto:
 
             # Рекурсивно отримуємо start_balance для цього місяця
             prev_start_balance = self.get_technoforum_start_balance(user_id, last_year, last_month) if (
-                        last_year < year or (last_year == year and last_month < month)) else 0.0
+                    last_year < year or (last_year == year and last_month < month)) else 0.0
 
             # Розрахунок end_balance останнього запису, який стає start_balance для поточного місяця
             start_balance = prev_start_balance + last_refuel - last_total_fuel_usage - last_additional_fuel_usage
@@ -503,7 +504,8 @@ class UserAuto:
                 calendar_work.today_date.between(report_month_start, report_month_end)
             ).count()
 
-            day_norm = self.get_refuel_num_in_month(report_month, user_id)#distance * (fuel_limit / 100) if fuel_limit else 0
+            day_norm = self.get_refuel_num_in_month(report_month,
+                                                    user_id)  # distance * (fuel_limit / 100) if fuel_limit else 0
             if day_norm is None:
                 day_norm = 0
             monthly_norm = day_norm * count_work_days
@@ -1163,6 +1165,7 @@ class UserAuto:
         buffer.seek(0)  # Повертаємо позицію на початок буфера
         return buffer  # Повертаємо BytesIO із вмістом PDF
 
+
 def diff_vacation_calc(profile_id, year_now):
     get_vacation_info = vacation.query.filter_by(years=year_now, user_id=profile_id).first()
     get_before_vacation_days_sum = db.session.query(func.sum(vacation.count_days)).filter(
@@ -1212,12 +1215,13 @@ def diff_vacation_calc(profile_id, year_now):
         count_before_vacation_days = 0
 
     count_canceled_days = vacations_canceled.query.with_entities(func.sum(vacations_canceled.count_days)).filter(
-        vacations_canceled.user_id==profile_id, vacations_canceled.year<=year_now
+        vacations_canceled.user_id == profile_id, vacations_canceled.year <= year_now
     ).scalar() or 0
 
     diff_vacation = count_vacation_days + count_before_vacation_days - count_canceled_days
 
     return diff_vacation, count_vacation_days, count_before_vacation_days
+
 
 class Users:
     def __init__(self, user_id):
@@ -1414,9 +1418,9 @@ class Users:
 
         # Отримання списку користувачів
         if user_id != 11:
-            get_user_list = users.query.filter(users.user_departament.in_(dep_id_list), users.display == 1).all()
+            get_user_list = users.query.filter(users.user_departament.in_(dep_id_list), users.display != 0).all()
         else:
-            get_user_list = users.query.all()
+            get_user_list = users.query.filter(users.display != 0).all()
 
         # Створення словника для оптимізації запитів на відсутності
         all_absences = absens_from_work.query.filter(
@@ -1437,6 +1441,8 @@ class Users:
             ).first()
 
             plan_hours = work_hours_data.plan_hours or 0
+            if plan_hours == 0:
+                continue
             fact_hours = work_hours_data.fact_hours or 0
             diff_hours = fact_hours - plan_hours
 
@@ -1509,214 +1515,214 @@ class Users:
     def format_number(value):
         if value is None:
             return 0
-        # Перетворюємо значення на float
-        float_value = float(value)
-        # Перевіряємо, чи дробова частина дорівнює нулю
-        if float_value.is_integer():
-            return int(float_value)
-        else:
-            return round(float_value, 2)
+        return int(round(float(value)))
 
     def get_users_calendar_info1(self, user_id, date_start, date_end):
-        get_user_departaments = users_departament.query.filter(users_departament.user_id==user_id,
-                            users_departament.access_level>=1).all()
+        get_user_departaments = users_departament.query.filter(users_departament.user_id == user_id,
+                                                               users_departament.access_level >= 1).all()
         dep_id_list = [ud.dep_id for ud in get_user_departaments]
 
         if user_id != 11:
-            get_user_list = users.query.filter(users.user_departament.in_(dep_id_list)).all()
+            get_user_list = users.query.filter(users.user_departament.in_(dep_id_list), users.display != 0).all()
 
         else:
-            get_user_list = users.query.all()
+            get_user_list = users.query.filter(users.display != 0).all()
 
         # Встановлення локалі для отримання назви днів тижня українською мовою
         locale.setlocale(locale.LC_TIME, 'uk_UA.UTF-8')
 
         info_list = []
         for user in tqdm(get_user_list):
-                # Cap metrics at today for the calendar view
-                today_max = datetime.combine(datetime.now().date(), datetime.max.time())
-                effective_end_cal = min(date_end, today_max)
+            # Cap metrics at today for the calendar view
+            today_max = datetime.combine(datetime.now().date(), datetime.max.time())
+            effective_end_cal = min(date_end, today_max)
 
-                count_work_day = calendar_work.query.filter(and_(calendar_work.user_id == user.id,
-                                                                 calendar_work.today_date >= date_start,
-                                                                 calendar_work.today_date <= effective_end_cal,
-                                                                 calendar_work.work_fact > 0)).count()
+            count_work_day = calendar_work.query.filter(and_(calendar_work.user_id == user.id,
+                                                             calendar_work.today_date >= date_start,
+                                                             calendar_work.today_date <= effective_end_cal,
+                                                             calendar_work.work_fact > 0)).count()
 
-                if count_work_day == 0:
-                    continue
+            # Fix: Don't skip users just because they have no work entries in the period up to today.
+            # This was causing future months to appear empty because work_fact is 0 for future dates.
+            # if count_work_day == 0:
+            #     continue
 
-                departament_name = departaments.query.filter_by(id=user.user_departament).first()
-                check_user_in_remove = absens_from_work.query.filter_by(user_id=user.id).first()
+            departament_name = departaments.query.filter_by(id=user.user_departament).first()
+            check_user_in_remove = absens_from_work.query.filter_by(user_id=user.id).first()
 
-                # Fetch plan for the WHOLE month, but fact only up to today
-                plan_hours = db.session.query(func.sum(calendar_work.work_time)).filter(
-                    calendar_work.user_id == user.id,
-                    calendar_work.today_date.between(date_start, date_end)
-                ).scalar() or 0
+            # Fetch plan for the WHOLE month, but fact only up to today
+            plan_hours = db.session.query(func.sum(calendar_work.work_time)).filter(
+                calendar_work.user_id == user.id,
+                calendar_work.today_date.between(date_start, date_end)
+            ).scalar() or 0
 
-                fact_hours = db.session.query(func.sum(calendar_work.work_fact)).filter(
-                    calendar_work.user_id == user.id,
-                    calendar_work.today_date.between(date_start, effective_end_cal)
-                ).scalar() or 0
+            fact_hours = db.session.query(func.sum(calendar_work.work_fact)).filter(
+                calendar_work.user_id == user.id,
+                calendar_work.today_date.between(date_start, effective_end_cal)
+            ).scalar() or 0
 
-                if fact_hours is None:
-                    fact_hours = 0
+            if fact_hours is None:
+                fact_hours = 0
 
-                if fact_hours and plan_hours:
-                    diff_hours = fact_hours - plan_hours
-                else:
-                    diff_hours = 0
-                    fact_hours = 0
-                    plan_hours = 0
+            if plan_hours == 0:
+                continue
 
-                user_head_leader = user_head.query.filter_by(head_id=user.id).first()
-                user_head_worker = user_head_leader
-                if user_head_worker:
-                    user_head_worker = user_head_worker.head_id
+            diff_hours = fact_hours - plan_hours if (fact_hours and plan_hours) else 0
+            if fact_hours is None:
+                fact_hours = 0
+            if plan_hours is None:
+                plan_hours = 0
 
-                user_info = {
-                    'user_id': user.id,
-                    'sort': departament_name.sort_num,
-                    'user_departament': departament_name.dep_name if departament_name else 'Не вибраний',
-                    'user_dep_head': user_head_leader,
-                    'num_in_list': user.user_num_list,
-                    'user_leader': user.id if user_head_leader else user_head_worker,
-                    'user_name': user.user_fullname,
-                    'birthday': str(user.birthdate),
-                    'calendar': [],
-                    'count_day_in_work': int(count_work_day),
-                    'plan_work': self.format_number(plan_hours),
-                    'fact_work': self.format_number(fact_hours),
-                    'diff_work': self.format_number(diff_hours),
+            user_head_leader = user_head.query.filter_by(head_id=user.id).first()
+            user_head_worker = user_head_leader
+            if user_head_worker:
+                user_head_worker = user_head_worker.head_id
+
+            user_info = {
+                'user_id': user.id,
+                'sort': departament_name.sort_num,
+                'user_departament': departament_name.dep_name if departament_name else 'Не вибраний',
+                'user_dep_head': user_head_leader,
+                'num_in_list': user.user_num_list,
+                'user_leader': user.id if user_head_leader else user_head_worker,
+                'user_name': user.user_fullname,
+                'birthday': str(user.birthdate),
+                'calendar': [],
+                'count_day_in_work': int(count_work_day),
+                'plan_work': self.format_number(plan_hours),
+                'fact_work': self.format_number(fact_hours),
+                'diff_work': self.format_number(diff_hours),
+            }
+
+            from collections import defaultdict
+            # Цикл для кожного дня
+            current_date = date_start
+            calendar_entries = db.session.query(
+                calendar_work.id,
+                calendar_work.today_date,
+                calendar_work.user_id,
+                calendar_work.work_time,
+                calendar_work.work_status,
+                calendar_work.work_fact,
+                calendar_work.reason
+            ).filter(
+                calendar_work.user_id == user.id,
+                calendar_work.today_date.between(date_start, date_end)
+            ).all()
+
+            # Перетворюємо у список словників
+            calendar_list = [
+                {
+                    "id": entry.id,
+                    "today_date": entry.today_date,
+                    "user_id": entry.user_id,
+                    "work_time": entry.work_time,
+                    "work_status": entry.work_status,
+                    "work_fact": entry.work_fact,
+                    "reason": entry.reason
                 }
+                for entry in calendar_entries
+            ]
 
-                from collections import defaultdict
-                # Цикл для кожного дня
-                current_date = date_start
-                calendar_entries = db.session.query(
-                    calendar_work.id,
-                    calendar_work.today_date,
-                    calendar_work.user_id,
-                    calendar_work.work_time,
-                    calendar_work.work_status,
-                    calendar_work.work_fact,
-                    calendar_work.reason
-                ).filter(
-                    calendar_work.user_id == user.id,
-                    calendar_work.today_date.between(date_start, date_end)
-                ).all()
+            # Опціонально: створюємо словник для швидкого доступу за датою
+            calendar_dict = {entry["today_date"].strftime('%Y-%m-%d'): entry for entry in calendar_list}
 
-                # Перетворюємо у список словників
-                calendar_list = [
-                    {
-                        "id": entry.id,
-                        "today_date": entry.today_date,
-                        "user_id": entry.user_id,
-                        "work_time": entry.work_time,
-                        "work_status": entry.work_status,
-                        "work_fact": entry.work_fact,
-                        "reason": entry.reason
+            # айді всіх записів користувача
+            ids = [entry["id"] for entry in calendar_dict.values()]
+
+            get_comments = work_comments.query.filter(
+                work_comments.records_id.in_(ids),
+                work_comments.user_id == user.id
+            ).order_by(work_comments.id.desc()).all()
+
+            # Get training records for the month
+            training_days = db.session.query(training_records.date, training_records.hours).filter(
+                training_records.user_id == user.id,
+                training_records.date.between(date_start, date_end)
+            ).all()
+            training_dict = {td.date.strftime('%Y-%m-%d'): td.hours for td in training_days}
+
+            # Створюємо список коментарів у вигляді словників
+            comments_list = [
+                {
+                    "id": comment.id,
+                    "records_id": comment.records_id,
+                    "user_id": comment.user_id,
+                    "comment": comment.comment,
+                    "dt_event": comment.dt_event,
+                    "user_add_comment": comment.user_add_comment
+                }
+                for comment in get_comments
+            ]
+
+            while current_date <= date_end:
+                current_date_str = current_date.strftime('%Y-%m-%d')
+
+                specific_entry = calendar_dict.get(current_date_str)
+                if specific_entry:
+
+                    # Об'єднуємо всі коментарі в один рядок
+                    filtered_comments = [comment for comment in get_comments if
+                                         comment.records_id == specific_entry['id']]
+
+                    # Об'єднуємо всі коментарі у один рядок
+                    all_comments = '; '.join([comment.comment for comment in
+                                              filtered_comments]) if filtered_comments else 'Коментарів немає'
+
+                    # Дані з calendar_entry, якщо запис існує
+                    day_info = {
+                        'date': current_date,
+                        'user_id': user.id,
+                        'work_time': self.format_number(specific_entry['work_time']),
+                        'work_fact': self.format_number(specific_entry['work_fact']),
+                        'work_status': 'white-text' if specific_entry['work_status'] == 2 and specific_entry[
+                            'reason'] == 'work' else 'original-color',
+                        'difference': (specific_entry['work_time'] - specific_entry['work_fact']) * (-1) if
+                        specific_entry['work_fact'] is not None else None,
+                        'reason': specific_entry['reason'] if specific_entry['reason'] else None,
+                        'weekend': 0,
+                        'comment': all_comments,
+                        'training_hours': training_dict.get(current_date_str, 0),
+                        'remove': check_user_in_remove,
+                        'date_remove': check_user_in_remove.date_remove if check_user_in_remove else False,
+                        'comm_remove': check_user_in_remove.remove_reason if check_user_in_remove else False
                     }
-                    for entry in calendar_entries
-                ]
-
-                # Опціонально: створюємо словник для швидкого доступу за датою
-                calendar_dict = {entry["today_date"].strftime('%Y-%m-%d'): entry for entry in calendar_list}
-
-                #айді всіх записів користувача
-                ids = [entry["id"] for entry in calendar_dict.values()]
-
-                get_comments = work_comments.query.filter(
-                    work_comments.records_id.in_(ids),
-                    work_comments.user_id == user.id
-                ).order_by(work_comments.id.desc()).all()
-
-                # Get training records for the month
-                training_days = db.session.query(training_records.date, training_records.hours).filter(
-                    training_records.user_id == user.id,
-                    training_records.date.between(date_start, date_end)
-                ).all()
-                training_dict = {td.date.strftime('%Y-%m-%d'): td.hours for td in training_days}
-
-                # Створюємо список коментарів у вигляді словників
-                comments_list = [
-                    {
-                        "id": comment.id,
-                        "records_id": comment.records_id,
-                        "user_id": comment.user_id,
-                        "comment": comment.comment,
-                        "dt_event": comment.dt_event,
-                        "user_add_comment": comment.user_add_comment
+                else:
+                    # '-' і None, якщо запису немає
+                    day_info = {
+                        'date': current_date,
+                        'user_id': user.id,
+                        'work_status': 1,
+                        'work_time': '-',
+                        'work_fact': None,
+                        'difference': None,
+                        'reason': None,
+                        'weekend': 1,
+                        'comment': 'Коментарів немає',
+                        'training_hours': training_dict.get(current_date_str, 0),
+                        'remove': check_user_in_remove,
+                        'date_remove': check_user_in_remove.date_remove if check_user_in_remove else False,
+                        'comm_remove': check_user_in_remove.remove_reason if check_user_in_remove else False
                     }
-                    for comment in get_comments
-                ]
 
-                while current_date <= date_end:
-                    current_date_str = current_date.strftime('%Y-%m-%d')
+                user_info['calendar'].append(day_info)
+                current_date += timedelta(days=1)
 
-                    specific_entry = calendar_dict.get(current_date_str)
-                    if specific_entry:
-
-                        # Об'єднуємо всі коментарі в один рядок
-                        filtered_comments = [comment for comment in get_comments if
-                                             comment.records_id == specific_entry['id']]
-
-                        # Об'єднуємо всі коментарі у один рядок
-                        all_comments = '; '.join([comment.comment for comment in
-                                                  filtered_comments]) if filtered_comments else 'Коментарів немає'
-
-                        # Дані з calendar_entry, якщо запис існує
-                        day_info = {
-                            'date': current_date,
-                            'user_id': user.id,
-                            'work_time': self.format_number(specific_entry['work_time']),
-                            'work_fact': self.format_number(specific_entry['work_fact']),
-                            'work_status': 'white-text' if specific_entry['work_status'] == 2 and specific_entry['reason'] == 'work' else 'original-color',
-                            'difference': (specific_entry['work_time'] - specific_entry['work_fact']) * (-1) if specific_entry['work_fact'] is not None else None,
-                            'reason': specific_entry['reason'] if specific_entry['reason'] else None,
-                            'weekend': 0,
-                            'comment': all_comments,
-                            'training_hours': training_dict.get(current_date_str, 0),
-                            'remove': check_user_in_remove,
-                            'date_remove': check_user_in_remove.date_remove if check_user_in_remove else False,
-                            'comm_remove': check_user_in_remove.remove_reason if check_user_in_remove else False
-                        }
-                    else:
-                        # '-' і None, якщо запису немає
-                        day_info = {
-                            'date': current_date,
-                            'user_id': user.id,
-                            'work_status': 1,
-                            'work_time': '-',
-                            'work_fact': None,
-                            'difference': None,
-                            'reason': None,
-                            'weekend': 1,
-                            'comment': 'Коментарів немає',
-                            'training_hours': training_dict.get(current_date_str, 0),
-                            'remove': check_user_in_remove,
-                            'date_remove': check_user_in_remove.date_remove if check_user_in_remove else False,
-                            'comm_remove': check_user_in_remove.remove_reason if check_user_in_remove else False
-                        }
-
-                    user_info['calendar'].append(day_info)
-                    current_date += timedelta(days=1)
-
-                if user_info['user_departament'] != 'Адміністратори':
-                    info_list.append(user_info)
+            if user_info['user_departament'] != 'Адміністратори':
+                info_list.append(user_info)
         users_info = sorted(info_list, key=lambda x: (x['sort'], x['num_in_list']))
         return users_info
 
     def get_salary_report_info(self, user_id, date_start, date_end):
         from datetime import timedelta
         get_user_departaments = users_departament.query.filter(users_departament.user_id == user_id,
-                                                              users_departament.access_level >= 1).all()
+                                                               users_departament.access_level >= 1).all()
         dep_id_list = [ud.dep_id for ud in get_user_departaments]
 
         if user_id != 11:
-            get_user_list = users.query.filter(users.user_departament.in_(dep_id_list), users.display == 1).all()
+            get_user_list = users.query.filter(users.user_departament.in_(dep_id_list), users.display != 0).all()
         else:
-            get_user_list = users.query.filter_by(display=1).all()
+            get_user_list = users.query.filter(users.display != 0).all()
 
         # Розраховуємо загальну кількість робочих днів у місяці (Пн-Пт)
         month_working_days = 0
@@ -1731,26 +1737,27 @@ class Users:
             # Calculate effective end date for 'days of presence' (cannot be in the future)
             today_max = datetime.combine(datetime.now().date(), datetime.max.time())
             effective_end = min(date_end, today_max)
-            
+
             count_work_day = calendar_work.query.filter(and_(calendar_work.user_id == user.id,
-                                                             calendar_work.today_date.between(date_start, effective_end),
+                                                             calendar_work.today_date.between(date_start,
+                                                                                              effective_end),
                                                              calendar_work.work_fact >= 1)).count() or 0
-            
+
             departament_name = departaments.query.filter_by(id=user.user_departament).first()
             if not departament_name:
                 continue
 
             salary_settings = user_salary_settings.query.filter_by(user_id=user.id).first()
-            
+
             # Skip if no settings OR (department is Administrators AND not explicitly in report)
             # OR (not in report AND not a student)
             if not salary_settings:
                 continue
-            
+
             is_admin_dep = (departament_name.dep_name == 'Адміністратори')
             if is_admin_dep and not salary_settings.in_salary_report:
                 continue
-                
+
             if not salary_settings.in_salary_report and not salary_settings.is_student:
                 continue
 
@@ -1770,25 +1777,23 @@ class Users:
                 if entry.today_date <= effective_end.date():
                     fact_hours += (entry.work_fact or 0.0)
 
-            sick_days_no_cert = 0
-            sick_days_with_cert = 0
+            if plan_hours == 0:
+                continue
+
+            sick_days = 0
+            sick_plan = 0
             vacation_days = 0
             vidgul_days = 0
             training_days = 0
-            sick_plan_no_cert = 0
-            sick_plan_with_cert = 0
             vacation_plan = 0
             vidgul_plan = 0
             training_plan = 0
 
             for entry in calendar_entries:
                 entry_plan = entry.work_time or 0.0
-                if entry.reason == 'dripicons-medical':
-                    sick_days_no_cert += 1
-                    sick_plan_no_cert += entry_plan
-                elif entry.reason == 'dripicons-pulse':
-                    sick_days_with_cert += 1
-                    sick_plan_with_cert += entry_plan
+                if entry.reason in ['dripicons-medical', 'dripicons-pulse']:
+                    sick_days += 1
+                    sick_plan += entry_plan
                 elif entry.reason in ['vacation', 'dripicons-gaming']:
                     vacation_days += 1
                     vacation_plan += entry_plan
@@ -1803,23 +1808,35 @@ class Users:
                     # In-work hours training - only count hours from training_records (handled below)
                     training_days += 1
 
+            # --- Check Monthly Override ---
+            monthly_data = salary_report_monthly.query.filter_by(
+                user_id=user.id,
+                month=date_start.month,
+                year=date_start.year
+            ).first()
+
+            if monthly_data and monthly_data.sick_days is not None:
+                # Override prioritized
+                sick_days = monthly_data.sick_days
+                sick_plan = sick_days * (salary_settings.hours_per_day or 10.0)
+            # ------------------------------
+
             extra_training_hours = db.session.query(func.sum(training_records.hours)).filter(
                 training_records.user_id == user.id,
                 training_records.date.between(date_start, date_end)
             ).scalar() or 0.0
 
             current_rate = salary_settings.hourly_rate if salary_settings.hourly_rate > 0 else 50.0
-            sick_units_no_cert  = sick_plan_no_cert  * current_rate * salary_settings.sick_multiplier
-            sick_units_with_cert = sick_plan_with_cert * current_rate * salary_settings.sick_multiplier
+            sick_units = sick_plan * current_rate * salary_settings.sick_multiplier
             vacation_avg_rate = salary_settings.vacation_avg_rate or 0.0
             vacation_units = vacation_plan * vacation_avg_rate * salary_settings.vacation_multiplier
-            
+
             # Training hours and units
             total_training_hours = training_plan + extra_training_hours
             vacation_avg_rate = salary_settings.vacation_avg_rate or 0.0
             training_units = total_training_hours * vacation_avg_rate * salary_settings.training_multiplier
-            
-            total_units_mech = sick_units_no_cert + sick_units_with_cert + vacation_units + training_units
+
+            total_units_mech = sick_units + vacation_units + training_units
 
             # Logic for Students
             fund_hours_by_schedule = 0.0
@@ -1832,9 +1849,10 @@ class Users:
                     if e.work_time and e.work_time > 0:
                         student_typical_h = e.work_time
                         break
-                
-                records_map = {entry.today_date: {'time': entry.work_time, 'reason': entry.reason} for entry in calendar_entries}
-                
+
+                records_map = {entry.today_date: {'time': entry.work_time, 'reason': entry.reason} for entry in
+                               calendar_entries}
+
                 curr_d = date_start
                 while curr_d <= date_end:
                     if curr_d in records_map:
@@ -1850,7 +1868,7 @@ class Users:
 
                 if fund_hours_by_schedule > 0:
                     norma_chasa = salary_settings.monthly_rate / fund_hours_by_schedule
-                
+
                 student_units = norma_chasa * (fact_hours or 0)
             else:
                 fund_hours_by_schedule = plan_hours
@@ -1864,23 +1882,24 @@ class Users:
                 'fact_work': self.format_number(fact_hours),
                 'salary_report': {
                     'is_student': salary_settings.is_student,
-                    'sick_no_cert':  {'days': sick_days_no_cert,  'units': round(sick_units_no_cert, 2), 'plan': sick_plan_no_cert},
-                    'sick_with_cert':{'days': sick_days_with_cert, 'units': round(sick_units_with_cert, 2), 'plan': sick_plan_with_cert},
-                    'vacation':      {'days': vacation_days,       'units': round(vacation_units, 2), 'plan': vacation_plan},
-                    'vacation_avg_rate': vacation_avg_rate,
-                    'training':      {'hours': total_training_hours, 'units': round(training_units, 2), 'plan': training_plan},
-                    'extra_training_hours': extra_training_hours,
+                    'sick': {'days': int(round(sick_days)), 'units': int(round(sick_units)), 'plan': sick_plan},
+                    'vacation': {'days': int(round(vacation_days)), 'units': int(round(vacation_units)),
+                                 'plan': vacation_plan},
+                    'vacation_avg_rate': int(round(vacation_avg_rate)),
+                    'training': {'hours': int(round(total_training_hours)), 'units': int(round(training_units)),
+                                 'plan': training_plan},
+                    'extra_training_hours': int(round(extra_training_hours)),
                     'training_mult': salary_settings.training_multiplier,
-                    'total_units_mech': round(total_units_mech, 2),
-                    'hourly_rate': current_rate,
-                    'monthly_rate': salary_settings.monthly_rate,
+                    'total_units_mech': int(round(total_units_mech)),
+                    'hourly_rate': int(round(current_rate)),
+                    'monthly_rate': int(round(salary_settings.monthly_rate)),
                     'hours_per_day': salary_settings.hours_per_day,
                     'sick_mult': salary_settings.sick_multiplier,
                     'vac_mult': salary_settings.vacation_multiplier,
                     'train_mult': salary_settings.training_multiplier,
-                    'student_units': round(student_units, 2),
-                    'total_units_student': round(student_units, 2),
-                    'norma_chasa': round(norma_chasa, 2),
+                    'student_units': int(round(student_units)),
+                    'total_units_student': int(round(student_units)),
+                    'norma_chasa': int(round(norma_chasa)),
                     'month_working_days': month_working_days
                 },
                 'sort': departament_name.sort_num or 99,
@@ -1888,12 +1907,13 @@ class Users:
             }
             if user_info['user_departament'] != 'Адміністратори':
                 info_list.append(user_info)
-        
+
         users_info = sorted(info_list, key=lambda x: (x['sort'], x['num_in_list']))
         return users_info
+
     def get_users_calendar_info_optimized(self, user_id, date_start, date_end):
-        get_user_departaments = users_departament.query.filter(users_departament.user_id==user_id,
-                            users_departament.access_level>=1).all()
+        get_user_departaments = users_departament.query.filter(users_departament.user_id == user_id,
+                                                               users_departament.access_level >= 1).all()
         dep_id_list = [ud.dep_id for ud in get_user_departaments]
 
         if user_id != 11:
@@ -1901,7 +1921,6 @@ class Users:
 
         else:
             get_user_list = users.query.all()
-
 
         # Встановлення локалі для отримання назви днів тижня українською мовою
         locale.setlocale(locale.LC_TIME, 'uk_UA.UTF-8')
@@ -1917,8 +1936,8 @@ class Users:
                 departament_name = departaments.query.filter_by(id=user.user_departament).first()
 
                 count_days = calendar_work.query.filter(calendar_work.user_id == user.id,
-                    calendar_work.today_date >= date_start,
-                    calendar_work.today_date <= date_end).count()
+                                                        calendar_work.today_date >= date_start,
+                                                        calendar_work.today_date <= date_end).count()
                 plan_hours = db.session.query(func.sum(calendar_work.work_time)).filter(
                     calendar_work.user_id == user.id,
                     calendar_work.today_date >= date_start,
@@ -1988,7 +2007,8 @@ class Users:
                             'work_time': self.format_number(calendar_entry.work_time),
                             'work_fact': self.format_number(calendar_entry.work_fact),
                             'work_status': 'white-text' if calendar_entry.work_status == 2 and calendar_entry.reason == 'work' else 'original-color',
-                            'difference': (calendar_entry.work_time - calendar_entry.work_fact) * (-1) if calendar_entry.work_fact is not None else None,
+                            'difference': (calendar_entry.work_time - calendar_entry.work_fact) * (
+                                -1) if calendar_entry.work_fact is not None else None,
                             'reason': calendar_entry.reason if calendar_entry.reason else None,
                             'weekend': 0,
                             'comment': all_comments,
@@ -2180,7 +2200,8 @@ class Users:
         ).subquery()
 
         if user_id != 11:
-            get_user_list = db.session.query(users).join(get_user_departaments, users.user_departament == get_user_departaments.c.dep_id).filter(
+            get_user_list = db.session.query(users).join(get_user_departaments,
+                                                         users.user_departament == get_user_departaments.c.dep_id).filter(
                 users.display == 1
             ).all()
         else:
@@ -2224,7 +2245,8 @@ class Users:
         for user in tqdm(get_user_list):
             # Отримання записів календаря для кожного користувача
             user_calendar_entries = [entry for entry in calendar_work_data if entry.user_id == user.id]
-            user_comments = {comment.records_id: comment.comment for comment in work_comments_data if comment.user_id == user.id}
+            user_comments = {comment.records_id: comment.comment for comment in work_comments_data if
+                             comment.user_id == user.id}
 
             departament_name = departaments_data.get(user.user_departament, 'Не вибраний')
             user_head_leader = user_heads_data.get(user.id, None)
@@ -2243,7 +2265,8 @@ class Users:
                 'count_day_in_work': sum(entry.count_days for entry in user_calendar_entries),
                 'plan_work': self.format_number(sum(entry.plan_hours for entry in user_calendar_entries)),
                 'fact_work': self.format_number(sum(entry.fact_hours for entry in user_calendar_entries)),
-                'diff_work': self.format_number(sum(entry.fact_hours - entry.plan_hours for entry in user_calendar_entries)),
+                'diff_work': self.format_number(
+                    sum(entry.fact_hours - entry.plan_hours for entry in user_calendar_entries)),
             }
 
             # Цикл для кожного дня
@@ -2354,14 +2377,13 @@ class Users:
 
         return diff_vacation, count_vacation_days, count_before_vacation_days
 
-
     def get_users_calendar_full_info(self, departament, companies, date_start, date_end):
         get_user_list = users.query.filter_by(display=1)
         if len(companies) > 0:
             get_user_list = get_user_list.filter(users.company.in_(companies))
 
-        get_user_departaments = users_departament.query.filter(and_(users_departament.user_id==self.user_id,
-                                                                    users_departament.access_level>=1)).all()
+        get_user_departaments = users_departament.query.filter(and_(users_departament.user_id == self.user_id,
+                                                                    users_departament.access_level >= 1)).all()
         print(get_user_departaments)
         for user_depart in get_user_departaments:
             if user_depart.dep_id not in departament:
@@ -2428,7 +2450,6 @@ class Users:
             age_delta = relativedelta(datetime.now(), user_age_datetime)
             age_years = age_delta.years
 
-
             get_dodatcovo_hours = calendar_work.query.with_entities(func.sum(calendar_work.work_fact)).filter(
                 and_(calendar_work.user_id == user.id, calendar_work.reason == 'dripicons-jewel',
                      calendar_work.today_date >= date_start, calendar_work.today_date <= date_end)).scalar()
@@ -2464,21 +2485,49 @@ class Users:
                     'user_id': user.id,
                     'user_name': user.user_fullname,
                     'user_dep_name': user_dep_name.dep_name,
-                    'dodatcovo_one': calendar_work.query.filter(and_(calendar_work.user_id == user.id, calendar_work.today_date >= date_start, calendar_work.today_date <= date_end, calendar_work.reason=='dripicons-jewel')).count(),
+                    'dodatcovo_one': calendar_work.query.filter(
+                        and_(calendar_work.user_id == user.id, calendar_work.today_date >= date_start,
+                             calendar_work.today_date <= date_end, calendar_work.reason == 'dripicons-jewel')).count(),
                     'dodatcovo_two': dodatcovo_hours,
-                    'otgul': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-flag', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
-                    'likarnjaniy': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-medical', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
-                    'vidrjad': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-suitcase', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
-                    'progul': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-cross', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
+                    'otgul': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                        calendar_work.reason == 'dripicons-flag',
+                                                        calendar_work.today_date >= date_start,
+                                                        calendar_work.today_date <= date_end).count(),
+                    'likarnjaniy': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                              calendar_work.reason == 'dripicons-medical',
+                                                              calendar_work.today_date >= date_start,
+                                                              calendar_work.today_date <= date_end).count(),
+                    'vidrjad': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                          calendar_work.reason == 'dripicons-suitcase',
+                                                          calendar_work.today_date >= date_start,
+                                                          calendar_work.today_date <= date_end).count(),
+                    'progul': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                         calendar_work.reason == 'dripicons-cross',
+                                                         calendar_work.today_date >= date_start,
+                                                         calendar_work.today_date <= date_end).count(),
                     'vidpustka_used': vacation_used,
                     'vidpustka_diff': self.calculate_diff_vacation(user.id, datetime.now().date())[0],
-                    'nezyasovano': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-cross', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
-                    #todo: кількість перепрацьованих
-                    'pererobka': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-jewel', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
-                    'vidprosivsya': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-time-reverse', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
-                    'mymoney': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-hourglass', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
-                    'compensation': calendar_work.query.filter(calendar_work.user_id==user.id, calendar_work.reason=='dripicons-card', calendar_work.today_date >= date_start, calendar_work.today_date <= date_end).count(),
-
+                    'nezyasovano': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                              calendar_work.reason == 'dripicons-cross',
+                                                              calendar_work.today_date >= date_start,
+                                                              calendar_work.today_date <= date_end).count(),
+                    # todo: кількість перепрацьованих
+                    'pererobka': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                            calendar_work.reason == 'dripicons-jewel',
+                                                            calendar_work.today_date >= date_start,
+                                                            calendar_work.today_date <= date_end).count(),
+                    'vidprosivsya': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                               calendar_work.reason == 'dripicons-time-reverse',
+                                                               calendar_work.today_date >= date_start,
+                                                               calendar_work.today_date <= date_end).count(),
+                    'mymoney': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                          calendar_work.reason == 'dripicons-hourglass',
+                                                          calendar_work.today_date >= date_start,
+                                                          calendar_work.today_date <= date_end).count(),
+                    'compensation': calendar_work.query.filter(calendar_work.user_id == user.id,
+                                                               calendar_work.reason == 'dripicons-card',
+                                                               calendar_work.today_date >= date_start,
+                                                               calendar_work.today_date <= date_end).count(),
 
                     'prisutnist_plan': int(plan_days),
                     'prisutnist_fact': int(fact_days),
@@ -2488,7 +2537,9 @@ class Users:
                     'fond_fact': int(fact_hours),
                     'fond_diff': int(diff_hours),
 
-                    'user_departament': company_list.query.filter_by(id=user_info['company_name']).first().company_name if company_list.query.filter_by(id=user_info['company_name']).first() else 'Не вказаний',
+                    'user_departament': company_list.query.filter_by(
+                        id=user_info['company_name']).first().company_name if company_list.query.filter_by(
+                        id=user_info['company_name']).first() else 'Не вказаний',
                     'user_starg': f"{join_years} роки {join_month} місяці {join_days} днів",
                     'user_age': f"{age_years} р."
                 })
@@ -2551,6 +2602,7 @@ def get_month_start_end(year, month):
 
     return start_date, end_date
 
+
 def get_calendar_data(user_id, reasons, thisyear):
     from collections import defaultdict
     this_year = thisyear
@@ -2562,7 +2614,6 @@ def get_calendar_data(user_id, reasons, thisyear):
     aggregated_data = defaultdict(lambda: [0] * 12)
     reason_list = ['dripicons-jewel', 'dripicons-return', 'vacation', 'dripicons-medical', 'dripicons-suitcase',
                    'dripicons-pulse', 'dripicons-cross', 'dripicons-time-reverse', 'dripicons-home']
-
 
     print(start_of_year, end_of_year)
     vacation_count_days = 0
@@ -2585,10 +2636,10 @@ def get_calendar_data(user_id, reasons, thisyear):
 
         for i in range(1, 13):
             start_month, end_month = get_month_start_end(this_year, i)
-            count_work_days = calendar_work.query.filter(and_(calendar_work.user_id==user_id,
-                                                              calendar_work.reason==reason_name,
-                                                              calendar_work.today_date>=start_month,
-                                                              calendar_work.today_date<=end_month)).count()
+            count_work_days = calendar_work.query.filter(and_(calendar_work.user_id == user_id,
+                                                              calendar_work.reason == reason_name,
+                                                              calendar_work.today_date >= start_month,
+                                                              calendar_work.today_date <= end_month)).count()
 
             result_list.append([reason_name, i, count_work_days])
 
@@ -2698,7 +2749,8 @@ def get_employees_data(year, user_id):
             ).label('dripicons_card_count'),  # Кількість dripicons-card
             vacations_canceled.count_days.label('canceled_vacation_days')  # Сума скасованих днів відпустки
         )
-        .group_by(users.id, departaments.dep_name, users.user_num_list, departaments.sort_num, vacations_canceled.count_days)
+        .group_by(users.id, departaments.dep_name, users.user_num_list, departaments.sort_num,
+                  vacations_canceled.count_days)
         .order_by(departaments.sort_num.asc(), users.user_num_list.desc())
         .all()  # Отримуємо всі записи
     )
@@ -2726,7 +2778,6 @@ def get_employees_data(year, user_id):
                                 )
                                 .scalar()
                             ) or 0
-
 
         # Отримуємо перший день поточного року
         current_year = datetime.now().year
@@ -2765,7 +2816,6 @@ def get_employees_data(year, user_id):
         if head_of_departament and department in ['Відділ сервісу', 'Рихтування'] and full_name != "Кролівець Тетяна":
             color = '#838c96'
 
-
         # Якщо департамент не змінюється, очищаємо поле
         if last_depart == department:
             department = ""
@@ -2779,7 +2829,8 @@ def get_employees_data(year, user_id):
         if full_name != 'Administrator' and department not in ['Розвозка']:
             result.append({
                 "department": department,
-                "name": full_name, #+ f"[{int(sum_vacation_days)}, {user.vacation_count}, {user.dripicons_card_count}, {canceled_days}]",
+                "name": full_name,
+                # + f"[{int(sum_vacation_days)}, {user.vacation_count}, {user.dripicons_card_count}, {canceled_days}]",
                 "vacation_taken": vacation_taken,
                 "vacation_compensation": dripicons_card,
                 "vacation_left": f"{vacation_left}",
@@ -2787,6 +2838,7 @@ def get_employees_data(year, user_id):
             })
 
     return result
+
 
 # Допоміжна функція для отримання даних
 def get_transport_data(month, year):
@@ -2811,7 +2863,8 @@ def get_transport_data(month, year):
 
     # Групування даних по працівниках
     from collections import defaultdict
-    employee_data = defaultdict(lambda: {'daily_counts': defaultdict(int), 'total_count': 0, 'full_name': '', 'user_id': None})
+    employee_data = defaultdict(
+        lambda: {'daily_counts': defaultdict(int), 'total_count': 0, 'full_name': '', 'user_id': None})
     for record, full_name in transport_records:
         day = record.date.day
         employee_data[record.user_id]['full_name'] = full_name
@@ -2841,7 +2894,6 @@ def get_transport_data(month, year):
         for data in employee_data.values()
     ]
     return sorted(result, key=lambda x: x['full_name']), weekends  # Повертаємо дані та список вихідних
-
 
 
 """def get_employees_data_next(year):
@@ -2929,9 +2981,10 @@ def get_transport_data(month, year):
 
     return result"""
 
-
 # Додайте цю функцію до вашого коду
 from decimal import Decimal
+
+
 def sync_fuel_used_with_okko_transactions(report_year, report_month):
     """
     Синхронізує таблицю fuel_used з даними з OKKO транзакцій
