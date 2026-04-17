@@ -1523,10 +1523,26 @@ class Users:
         dep_id_list = [ud.dep_id for ud in get_user_departaments]
 
         if user_id != 11:
-            get_user_list = users.query.filter(users.user_departament.in_(dep_id_list), users.display != 0).all()
+            # Отримуємо користувачів, які активні АБО мають відпрацьовані години у вибраному періоді
+            working_user_ids = db.session.query(calendar_work.user_id).filter(
+                calendar_work.today_date.between(date_start, date_end),
+                calendar_work.work_fact > 0
+            ).distinct().subquery()
+
+            get_user_list = users.query.filter(
+                users.user_departament.in_(dep_id_list),
+                or_(users.display != 0, users.id.in_(working_user_ids))
+            ).all()
 
         else:
-            get_user_list = users.query.filter(users.display != 0).all()
+            working_user_ids = db.session.query(calendar_work.user_id).filter(
+                calendar_work.today_date.between(date_start, date_end),
+                calendar_work.work_fact > 0
+            ).distinct().subquery()
+
+            get_user_list = users.query.filter(
+                or_(users.display != 0, users.id.in_(working_user_ids))
+            ).all()
 
         # Встановлення локалі для отримання назви днів тижня українською мовою
         locale.setlocale(locale.LC_TIME, 'uk_UA.UTF-8')
