@@ -1522,26 +1522,29 @@ class Users:
                                                                users_departament.access_level >= 1).all()
         dep_id_list = [ud.dep_id for ud in get_user_departaments]
 
-        if user_id != 11:
-            # Отримуємо користувачів, які активні АБО мають відпрацьовані години у вибраному періоді
-            working_user_ids = db.session.query(calendar_work.user_id).filter(
-                calendar_work.today_date.between(date_start, date_end),
-                calendar_work.work_fact > 0
-            ).distinct().subquery()
+        # Шукаємо користувачів, які мають хоча б якусь активність (фактично відпрацьовано або вказана причина відсутності)
+        active_entry_user_ids = db.session.query(calendar_work.user_id).filter(
+            calendar_work.today_date.between(date_start, date_end),
+            or_(
+                calendar_work.work_fact > 0,
+                and_(
+                    calendar_work.reason.isnot(None),
+                    calendar_work.reason != '',
+                    calendar_work.reason != '0'
+                )
+            )
+        ).distinct().subquery()
 
+        if user_id != 11:
+            # Показуємо активних АБО тих, хто має фактичну активність у цьому місяці
             get_user_list = users.query.filter(
                 users.user_departament.in_(dep_id_list),
-                or_(users.display != 0, users.id.in_(working_user_ids))
+                or_(users.display != 0, users.id.in_(active_entry_user_ids))
             ).all()
 
         else:
-            working_user_ids = db.session.query(calendar_work.user_id).filter(
-                calendar_work.today_date.between(date_start, date_end),
-                calendar_work.work_fact > 0
-            ).distinct().subquery()
-
             get_user_list = users.query.filter(
-                or_(users.display != 0, users.id.in_(working_user_ids))
+                or_(users.display != 0, users.id.in_(active_entry_user_ids))
             ).all()
 
         # Встановлення локалі для отримання назви днів тижня українською мовою
@@ -1577,11 +1580,24 @@ class Users:
                 calendar_work.today_date.between(date_start, effective_end_cal)
             ).scalar() or 0
 
-            if fact_hours is None:
-                fact_hours = 0
-
-            if plan_hours == 0:
-                continue
+            # Для звільнених (display == 0) перевіряємо, чи є в них фактична робота або причина відсутності
+            if user.display == 0:
+                if fact_hours == 0:
+                    # Додатково перевіряємо наявність причин відсутності
+                    has_reason = db.session.query(calendar_work.id).filter(
+                        calendar_work.user_id == user.id,
+                        calendar_work.today_date.between(date_start, date_end),
+                        calendar_work.reason.isnot(None),
+                        calendar_work.reason != '',
+                        calendar_work.reason != '0'
+                    ).first()
+                    if not has_reason:
+                        continue
+            else:
+                # Для активних залишаємо логіку: якщо немає плану і факту – не показуємо в календарі 
+                # (якщо ви хочете їх бачити завжди, можна прибрати цю умову)
+                if plan_hours == 0 and fact_hours == 0:
+                    continue
 
             diff_hours = fact_hours - plan_hours if (fact_hours and plan_hours) else 0
             if fact_hours is None:
