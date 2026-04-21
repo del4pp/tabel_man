@@ -4700,7 +4700,7 @@ def generate_vacation_report_pdf():
         row_colors.append(employee['color'])
         index += 1
 
-    table = Table(table_data, colWidths=[0.5 * inch, 1.7 * inch, 2.3 * inch, 1.2 * inch, 1.2 * inch, 1.2 * inch], hAlign='CENTER')
+    table = Table(table_data, colWidths=[0.5 * inch, 2.5 * inch, 2.0 * inch, 1.2 * inch, 1.2 * inch, 1.2 * inch], hAlign='CENTER')
 
     # Стилі для таблиці
     table_styles = [
@@ -4708,8 +4708,12 @@ def generate_vacation_report_pdf():
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (1, 1), (1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('FONTNAME', (0, 0), (-1, -1), "DejaVuSerif"),
+        ('WORDWRAP', (1, 1), (1, -1), True),
+        ('LEFTPADDING', (1, 1), (1, -1), 4),
+        ('RIGHTPADDING', (1, 1), (1, -1), 4),
     ]
 
     # Застосовуємо кольори до рядків
