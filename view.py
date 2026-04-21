@@ -4700,7 +4700,7 @@ def generate_vacation_report_pdf():
         row_colors.append(employee['color'])
         index += 1
 
-    table = Table(table_data, colWidths=[0.5 * inch, 2 * inch, 2.3 * inch, 1.2 * inch, 1.2 * inch, 1.2 * inch], hAlign='CENTER')
+    table = Table(table_data, colWidths=[0.5 * inch, 1.9 * inch, 2.1 * inch, 1.2 * inch, 1.2 * inch, 1.2 * inch], hAlign='CENTER')
 
     # Стилі для таблиці
     table_styles = [
